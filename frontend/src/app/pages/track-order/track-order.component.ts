@@ -21,6 +21,14 @@ import { Alert } from '../../utils/alert.utils';
 
       <div class="orders-container mt-5">
         <div *ngFor="let order of getDisplayOrders()" class="order-card glass-card">
+          <!-- Transparent Angled DELIVERED Stamp Watermark -->
+          <div class="delivered-watermark-stamp" *ngIf="order.status === 'DELIVERED'">
+            <div class="stamp-inner">
+              <span class="stamp-title font-serif">DELIVERED</span>
+              <span class="stamp-sub font-serif">AUTHENTIC & VERIFIED</span>
+            </div>
+          </div>
+
           <div class="order-header-row">
             <div>
               <span class="order-num font-serif">{{ order.orderNumber }}</span>
@@ -115,21 +123,11 @@ import { Alert } from '../../utils/alert.utils';
             </button>
           </div>
 
-          <!-- Paid Confirmation Badge with File / Invoice Icon -->
-          <div class="paid-confirmation-banner mt-4" *ngIf="order.isBalancePaid">
+          <!-- Paid Confirmation Badge (Shown when paid and not yet delivered) -->
+          <div class="paid-confirmation-banner mt-4" *ngIf="order.isBalancePaid && order.status !== 'DELIVERED'">
             <div class="paid-banner-left">
               <span>✓ 100% Full Order Payment Complete • Thank you for shopping with Jhulki Haute Couture!</span>
             </div>
-            <button (click)="openInvoiceModal(order)" class="luxury-invoice-btn" title="View & Download Official Tax Invoice">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="16" y1="13" x2="8" y2="13"></line>
-                <line x1="16" y1="17" x2="8" y2="17"></line>
-                <polyline points="10 9 9 9 8 9"></polyline>
-              </svg>
-              <span>TAX INVOICE</span>
-            </button>
           </div>
 
           <!-- Order Items -->
@@ -414,6 +412,46 @@ import { Alert } from '../../utils/alert.utils';
     .order-card {
       padding: 24px;
       margin-bottom: 30px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .delivered-watermark-stamp {
+      position: absolute;
+      top: 50%;
+      right: 8%;
+      transform: translateY(-50%) rotate(-14deg);
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.25;
+      user-select: none;
+    }
+
+    .stamp-inner {
+      border: 3px double #34c759;
+      border-radius: 8px;
+      padding: 10px 22px;
+      text-align: center;
+      background: rgba(52, 199, 89, 0.04);
+      box-shadow: 0 0 20px rgba(52, 199, 89, 0.1);
+    }
+
+    .stamp-title {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: 0.22em;
+      color: #34c759;
+      display: block;
+      line-height: 1;
+      text-transform: uppercase;
+    }
+
+    .stamp-sub {
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      color: #34c759;
+      display: block;
+      margin-top: 4px;
     }
 
     .order-header-row {
