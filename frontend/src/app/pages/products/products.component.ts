@@ -17,7 +17,7 @@ import { Product } from '../../models/ecommerce.model';
       <div class="page-header">
         <span class="badge-gold" *ngIf="!isBogoFiltered">JHULKI COLLECTION</span>
         <span class="badge-gold" *ngIf="isBogoFiltered" style="background:#ff4757; color:#fff;">🎁 BUY 1 GET 1 FREE PROMOTION</span>
-        <h1 class="font-serif page-title">{{ selectedCategoryName() }}</h1>
+        <h1 [class.font-serif]="!isBogoFiltered" class="page-title" [style.font-family]="isBogoFiltered ? 'sans-serif' : 'inherit'" [style.font-weight]="isBogoFiltered ? '600' : 'normal'" [style.letter-spacing]="isBogoFiltered ? '0.02em' : 'normal'">{{ selectedCategoryName() }}</h1>
         <p class="page-desc" *ngIf="!isBogoFiltered">Explore our curated selection of bespoke apparel, haute couture evening wear, and accessories.</p>
         <p class="page-desc" *ngIf="isBogoFiltered" style="color:#ff6b81; font-weight:600;">Showing all Buy 1 Get 1 Free promotion pieces first. Mix and match any BOGO items to receive the lower priced item free!</p>
       </div>
