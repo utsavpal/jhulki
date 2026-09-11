@@ -15,9 +15,11 @@ import { Product } from '../../models/ecommerce.model';
     <div class="products-page">
       <!-- Header Banner -->
       <div class="page-header">
-        <span class="badge-gold">JHULKI COLLECTION</span>
+        <span class="badge-gold" *ngIf="!isBogoFiltered">JHULKI COLLECTION</span>
+        <span class="badge-gold" *ngIf="isBogoFiltered" style="background:#ff4757; color:#fff;">🎁 BUY 1 GET 1 FREE PROMOTION</span>
         <h1 class="font-serif page-title">{{ selectedCategoryName() }}</h1>
-        <p class="page-desc">Explore our curated selection of bespoke apparel, haute couture evening wear, and accessories.</p>
+        <p class="page-desc" *ngIf="!isBogoFiltered">Explore our curated selection of bespoke apparel, haute couture evening wear, and accessories.</p>
+        <p class="page-desc" *ngIf="isBogoFiltered" style="color:#ff6b81; font-weight:600;">Showing all Buy 1 Get 1 Free promotion pieces first. Mix and match any BOGO items to receive the lower priced item free!</p>
       </div>
 
       <!-- Filters & Sorting Controls -->
@@ -26,10 +28,19 @@ import { Product } from '../../models/ecommerce.model';
           <button 
             *ngFor="let cat of categories" 
             (click)="selectCategory(cat.slug)"
-            [class.active]="currentCategory === cat.slug"
+            [class.active]="currentCategory === cat.slug && !isBogoFiltered"
             class="pill-btn"
           >
             {{ cat.name }}
+          </button>
+          
+          <!-- BOGO Quick Filter Button -->
+          <button 
+            (click)="toggleBogoFilter()" 
+            [class.active]="isBogoFiltered"
+            class="pill-btn bogo-pill-btn"
+          >
+            🎁 BOGO OFFERS
           </button>
         </div>
 
@@ -37,6 +48,7 @@ import { Product } from '../../models/ecommerce.model';
           <label>Sort By:</label>
           <select [(ngModel)]="currentSort" (change)="applyFilters()">
             <option value="newest">Newest Arrivals</option>
+            <option value="bogo-first">BOGO Offers First</option>
             <option value="price-low">Price: Low to High</option>
             <option value="price-high">Price: High to Low</option>
             <option value="name">Alphabetical</option>
@@ -48,6 +60,11 @@ import { Product } from '../../models/ecommerce.model';
       <div class="products-grid mt-5">
         <div *ngFor="let product of products()" class="product-card glass-card">
           <div class="product-image-wrap">
+            <!-- BOGO Corner Ribbon Badge -->
+            <div class="bogo-ribbon" *ngIf="product.isBogoEnabled">
+              <span>BUY 1 GET 1 FREE</span>
+            </div>
+
             <img [src]="product.images[0]" [alt]="product.name" />
             <button 
               class="wishlist-btn" 
@@ -80,7 +97,7 @@ import { Product } from '../../models/ecommerce.model';
       <div *ngIf="products().length === 0" class="empty-state glass-card">
         <h3 class="font-serif">No Luxury Pieces Found</h3>
         <p>There are no products matching your selected category or search filters.</p>
-        <button (click)="selectCategory('all')" class="luxury-btn-primary mt-3">Reset Filters</button>
+        <button (click)="resetFilters()" class="luxury-btn-primary mt-3">Reset Filters</button>
       </div>
     </div>
   `,
@@ -141,6 +158,19 @@ import { Product } from '../../models/ecommerce.model';
       border-color: var(--color-gold-primary);
     }
 
+    .bogo-pill-btn {
+      border-color: #ff4757;
+      color: #ff6b81;
+      font-weight: 700;
+    }
+
+    .bogo-pill-btn:hover, .bogo-pill-btn.active {
+      background: linear-gradient(135deg, #ff4757, #ff6b81) !important;
+      color: #fff !important;
+      border-color: #ff4757 !important;
+      box-shadow: 0 4px 12px rgba(255,71,87,0.4);
+    }
+
     .sort-wrap {
       display: flex;
       align-items: center;
@@ -170,6 +200,7 @@ import { Product } from '../../models/ecommerce.model';
     }
 
     .product-card {
+      position: relative;
       transition: var(--transition-smooth);
       display: flex;
       flex-direction: column;
@@ -179,6 +210,37 @@ import { Product } from '../../models/ecommerce.model';
       transform: translateY(-6px);
       box-shadow: var(--box-shadow-luxury);
       border-color: var(--color-border-glow);
+    }
+
+    /* BOGO Corner Ribbon Badge */
+    .bogo-ribbon {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 110px;
+      height: 110px;
+      overflow: hidden;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .bogo-ribbon span {
+      position: absolute;
+      display: block;
+      width: 155px;
+      padding: 5px 0;
+      background: linear-gradient(135deg, #ff4757, #ff6b81);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.5);
+      color: #fff;
+      font-size: 0.6rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-align: center;
+      right: -25px;
+      top: 22px;
+      transform: rotate(-45deg);
+      text-transform: uppercase;
+      border: 1px dashed rgba(255,255,255,0.4);
     }
 
     .product-image-wrap {
@@ -212,6 +274,7 @@ import { Product } from '../../models/ecommerce.model';
       justify-content: center;
       color: #fff;
       transition: var(--transition-smooth);
+      z-index: 6;
     }
 
     .wishlist-btn.active, .wishlist-btn:hover {
@@ -304,6 +367,7 @@ export class ProductsComponent implements OnInit {
   currentCategory = 'all';
   currentSort = 'newest';
   currentSearch = '';
+  isBogoFiltered = false;
 
   constructor(
     public ecommerceService: EcommerceService,
@@ -315,23 +379,52 @@ export class ProductsComponent implements OnInit {
     this.route.queryParams.subscribe(params => {
       if (params['category']) this.currentCategory = params['category'];
       if (params['search']) this.currentSearch = params['search'];
+      if (params['bogo'] === 'true') {
+        this.isBogoFiltered = true;
+        this.currentSort = 'bogo-first';
+      } else {
+        this.isBogoFiltered = false;
+      }
       this.applyFilters();
     });
   }
 
   selectedCategoryName(): string {
+    if (this.isBogoFiltered) return 'Buy 1 Get 1 Free Offers';
     const found = this.categories.find(c => c.slug === this.currentCategory);
     return found ? found.name : 'Haute Couture Collections';
   }
 
   selectCategory(slug: string) {
     this.currentCategory = slug;
+    this.isBogoFiltered = false;
+    this.applyFilters();
+  }
+
+  toggleBogoFilter() {
+    this.isBogoFiltered = !this.isBogoFiltered;
+    if (this.isBogoFiltered) {
+      this.currentSort = 'bogo-first';
+    }
+    this.applyFilters();
+  }
+
+  resetFilters() {
+    this.currentCategory = 'all';
+    this.isBogoFiltered = false;
+    this.currentSort = 'newest';
+    this.currentSearch = '';
     this.applyFilters();
   }
 
   applyFilters() {
     this.ecommerceService.fetchProducts(this.currentCategory, this.currentSearch, this.currentSort).subscribe(data => {
-      this.products.set(data);
+      let result = [...data];
+      if (this.isBogoFiltered || this.currentSort === 'bogo-first') {
+        // Sort BOGO enabled items first
+        result.sort((a, b) => (b.isBogoEnabled ? 1 : 0) - (a.isBogoEnabled ? 1 : 0));
+      }
+      this.products.set(result);
     });
   }
 
@@ -344,3 +437,4 @@ export class ProductsComponent implements OnInit {
     this.ecommerceService.toggleWishlist(productId).subscribe();
   }
 }
+

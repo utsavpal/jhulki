@@ -17,6 +17,11 @@ import { Alert } from '../../utils/alert.utils';
         <!-- Gallery Images -->
         <div class="gallery-section">
           <div class="main-image-wrap glass-card">
+            <!-- BOGO Corner Ribbon Badge -->
+            <div class="bogo-ribbon" *ngIf="product()?.isBogoEnabled">
+              <span>BUY 1 GET 1 FREE</span>
+            </div>
+
             <img [src]="selectedImage()" [alt]="product()?.name" />
           </div>
           <div class="thumbnails-grid" *ngIf="product()?.images && product()!.images.length > 1">
@@ -39,6 +44,20 @@ import { Alert } from '../../utils/alert.utils';
           </div>
 
           <h1 class="product-title font-serif">{{ product()?.name }}</h1>
+
+          <!-- BOGO Exclusive Promo Banner Box -->
+          <div class="bogo-promo-box glass-card mb-4" *ngIf="product()?.isBogoEnabled">
+            <div class="bogo-header">
+              <span class="bogo-tag">🎁 BOGO SPECIAL OFFER</span>
+              <span class="bogo-sub">BUY 1 GET 1 FREE</span>
+            </div>
+            <p class="bogo-desc">
+              Add this piece along with any other BOGO-eligible item to your bag — the lower priced item will automatically be <strong>100% FREE</strong> at checkout!
+            </p>
+            <a routerLink="/products" [queryParams]="{bogo: 'true'}" class="bogo-link mt-2">
+              BROWSE ALL BOGO ELIGIBLE ITEMS →
+            </a>
+          </div>
 
           <div class="price-bar" *ngIf="product() as prod">
             <span class="price">₹{{ ecommerceService.getEffectivePrice(prod) }}</span>
@@ -207,9 +226,94 @@ import { Alert } from '../../utils/alert.utils';
     }
 
     .main-image-wrap {
+      position: relative;
       height: 600px;
       overflow: hidden;
       border-radius: 4px;
+    }
+
+    /* BOGO Corner Ribbon Badge */
+    .bogo-ribbon {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 130px;
+      height: 130px;
+      overflow: hidden;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .bogo-ribbon span {
+      position: absolute;
+      display: block;
+      width: 180px;
+      padding: 6px 0;
+      background: linear-gradient(135deg, #ff4757, #ff6b81);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.5);
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-align: center;
+      right: -25px;
+      top: 25px;
+      transform: rotate(-45deg);
+      text-transform: uppercase;
+      border: 1px dashed rgba(255,255,255,0.4);
+    }
+
+    /* BOGO Promo Box */
+    .bogo-promo-box {
+      padding: 16px 20px;
+      border: 1px solid rgba(255, 71, 87, 0.4);
+      background: linear-gradient(135deg, rgba(255, 71, 87, 0.1), rgba(0, 0, 0, 0.4));
+      border-radius: 4px;
+    }
+
+    .bogo-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .bogo-tag {
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      color: #fff;
+      background: #ff4757;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 2px;
+    }
+
+    .bogo-sub {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: #ff6b81;
+      letter-spacing: 0.1em;
+    }
+
+    .bogo-desc {
+      font-size: 0.85rem;
+      color: #ddd;
+      line-height: 1.4;
+
+    }
+
+    .bogo-link {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #ff6b81;
+      letter-spacing: 0.08em;
+      text-decoration: underline;
+      transition: var(--transition-smooth);
+    }
+
+    .bogo-link:hover {
+      color: #fff;
     }
 
     .main-image-wrap img {

@@ -12,6 +12,18 @@ import { Alert } from '../../utils/alert.utils';
   imports: [CommonModule, RouterModule],
   template: `
     <div class="home-container">
+      <!-- Horizontal Scrollable BOGO Promotion Banner -->
+      <div class="bogo-marquee-bar" *ngIf="hasActiveBogoOffers()">
+        <a routerLink="/products" [queryParams]="{bogo: 'true'}" class="marquee-content">
+          <div class="marquee-track">
+            <span class="marquee-item">⚡ EXCLUSIVE BOGO OFFER: BUY 1 GET 1 FREE ON SELECT LUXURY COUTURE! 🎁 CLICK HERE TO SHOP ALL BOGO PIECES! ⚡</span>
+            <span class="marquee-item">⚡ EXCLUSIVE BOGO OFFER: BUY 1 GET 1 FREE ON SELECT LUXURY COUTURE! 🎁 CLICK HERE TO SHOP ALL BOGO PIECES! ⚡</span>
+            <span class="marquee-item">⚡ EXCLUSIVE BOGO OFFER: BUY 1 GET 1 FREE ON SELECT LUXURY COUTURE! 🎁 CLICK HERE TO SHOP ALL BOGO PIECES! ⚡</span>
+            <span class="marquee-item">⚡ EXCLUSIVE BOGO OFFER: BUY 1 GET 1 FREE ON SELECT LUXURY COUTURE! 🎁 CLICK HERE TO SHOP ALL BOGO PIECES! ⚡</span>
+          </div>
+        </a>
+      </div>
+
       <!-- Hero Runway Section -->
       <section class="hero-section">
         <div class="hero-bg"></div>
@@ -27,8 +39,8 @@ import { Alert } from '../../utils/alert.utils';
                 <path d="M5 12h14M12 5l7 7-7 7"/>
               </svg>
             </a>
-            <a routerLink="/products" [queryParams]="{category: 'women'}" class="luxury-btn-outline">
-              VIEW RUNWAY
+            <a routerLink="/products" [queryParams]="{bogo: 'true'}" class="luxury-btn-outline" *ngIf="hasActiveBogoOffers()">
+              SHOP BOGO OFFERS 🎁
             </a>
           </div>
         </div>
@@ -77,6 +89,11 @@ import { Alert } from '../../utils/alert.utils';
         <div class="products-grid">
           <div *ngFor="let product of featuredProducts()" class="product-card glass-card">
             <div class="product-image-wrap">
+              <!-- BOGO Corner Ribbon Badge -->
+              <div class="bogo-ribbon" *ngIf="product.isBogoEnabled">
+                <span>BUY 1 GET 1 FREE</span>
+              </div>
+
               <img [src]="product.images[0]" [alt]="product.name" />
               <button 
                 class="wishlist-btn" 
@@ -110,6 +127,77 @@ import { Alert } from '../../utils/alert.utils';
   styles: [`
     .home-container {
       width: 100%;
+    }
+
+    /* BOGO Marquee Bar Styles */
+    .bogo-marquee-bar {
+      background: linear-gradient(90deg, #d4af37 0%, #fff2a3 50%, #d4af37 100%);
+      color: #000;
+      overflow: hidden;
+      white-space: nowrap;
+      cursor: pointer;
+      position: relative;
+      z-index: 10;
+      box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+    }
+
+    .marquee-content {
+      display: block;
+      padding: 10px 0;
+      text-decoration: none;
+      color: #000;
+    }
+
+    .marquee-track {
+      display: inline-flex;
+      animation: marquee 22s linear infinite;
+    }
+
+    .bogo-marquee-bar:hover .marquee-track {
+      animation-play-state: paused;
+    }
+
+    .marquee-item {
+      font-size: 0.8rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      padding-right: 50px;
+    }
+
+    @keyframes marquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* BOGO Corner Ribbon Badge */
+    .bogo-ribbon {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 110px;
+      height: 110px;
+      overflow: hidden;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .bogo-ribbon span {
+      position: absolute;
+      display: block;
+      width: 155px;
+      padding: 5px 0;
+      background: linear-gradient(135deg, #ff4757, #ff6b81);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.5);
+      color: #fff;
+      font-size: 0.6rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-align: center;
+      right: -25px;
+      top: 22px;
+      transform: rotate(-45deg);
+      text-transform: uppercase;
+      border: 1px dashed rgba(255,255,255,0.4);
     }
 
     .hero-section {
@@ -300,6 +388,7 @@ import { Alert } from '../../utils/alert.utils';
       justify-content: center;
       color: #fff;
       transition: var(--transition-smooth);
+      z-index: 6;
     }
 
     .wishlist-btn.active, .wishlist-btn:hover {
@@ -319,7 +408,6 @@ import { Alert } from '../../utils/alert.utils';
       letter-spacing: 0.2em;
       color: var(--color-gold-light);
       text-transform: uppercase;
-
     }
 
     .product-name {
@@ -370,6 +458,7 @@ import { Alert } from '../../utils/alert.utils';
 })
 export class HomeComponent implements OnInit {
   featuredProducts = signal<Product[]>([]);
+  allProductsList = signal<Product[]>([]);
 
   constructor(
     public ecommerceService: EcommerceService,
@@ -378,8 +467,13 @@ export class HomeComponent implements OnInit {
 
   ngOnInit() {
     this.ecommerceService.fetchProducts(undefined, undefined, undefined).subscribe(products => {
+      this.allProductsList.set(products);
       this.featuredProducts.set(products.slice(0, 4));
     });
+  }
+
+  hasActiveBogoOffers(): boolean {
+    return this.allProductsList().some(p => p.isBogoEnabled);
   }
 
   toggleWishlist(event: MouseEvent, productId: string) {
@@ -391,3 +485,4 @@ export class HomeComponent implements OnInit {
     this.ecommerceService.toggleWishlist(productId).subscribe();
   }
 }
+
