@@ -16,10 +16,10 @@ import { Alert } from '../../utils/alert.utils';
       <div class="bogo-marquee-bar" *ngIf="hasActiveBogoOffers()">
         <a routerLink="/products" [queryParams]="{bogo: 'true'}" class="marquee-content">
           <div class="marquee-track">
-            <span class="marquee-item">⚡ EXCLUSIVE BOGO OFFER: BUY 1 GET 1 FREE ON SELECT LUXURY COUTURE! 🎁 CLICK HERE TO SHOP ALL BOGO PIECES! ⚡</span>
-            <span class="marquee-item">⚡ EXCLUSIVE BOGO OFFER: BUY 1 GET 1 FREE ON SELECT LUXURY COUTURE! 🎁 CLICK HERE TO SHOP ALL BOGO PIECES! ⚡</span>
-            <span class="marquee-item">⚡ EXCLUSIVE BOGO OFFER: BUY 1 GET 1 FREE ON SELECT LUXURY COUTURE! 🎁 CLICK HERE TO SHOP ALL BOGO PIECES! ⚡</span>
-            <span class="marquee-item">⚡ EXCLUSIVE BOGO OFFER: BUY 1 GET 1 FREE ON SELECT LUXURY COUTURE! 🎁 CLICK HERE TO SHOP ALL BOGO PIECES! ⚡</span>
+            <span class="marquee-item">⚡ EXCLUSIVE BOGO OFFER: BUY 1 GET 1 FREE ON SELECT LUXURY COUTURE! CLICK HERE TO SHOP ALL BOGO PIECES! ⚡</span>
+            <span class="marquee-item">⚡ EXCLUSIVE BOGO OFFER: BUY 1 GET 1 FREE ON SELECT LUXURY COUTURE! CLICK HERE TO SHOP ALL BOGO PIECES! ⚡</span>
+            <span class="marquee-item">⚡ EXCLUSIVE BOGO OFFER: BUY 1 GET 1 FREE ON SELECT LUXURY COUTURE! CLICK HERE TO SHOP ALL BOGO PIECES! ⚡</span>
+            <span class="marquee-item">⚡ EXCLUSIVE BOGO OFFER: BUY 1 GET 1 FREE ON SELECT LUXURY COUTURE! CLICK HERE TO SHOP ALL BOGO PIECES! ⚡</span>
           </div>
         </a>
       </div>
@@ -40,7 +40,7 @@ import { Alert } from '../../utils/alert.utils';
               </svg>
             </a>
             <a routerLink="/products" [queryParams]="{bogo: 'true'}" class="luxury-btn-outline" *ngIf="hasActiveBogoOffers()">
-              SHOP BOGO OFFERS 🎁
+              SHOP BOGO OFFERS
             </a>
           </div>
         </div>

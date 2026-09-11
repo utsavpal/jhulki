@@ -26,9 +26,21 @@ import { Alert } from '../../utils/alert.utils';
               <span class="order-num font-serif">{{ order.orderNumber }}</span>
               <span class="order-date">{{ order.createdAt | date:'mediumDate' }}</span>
             </div>
-            <span class="status-badge" [class.shipped]="order.status === 'SHIPPED'" [class.delivered]="order.status === 'DELIVERED'">
-              {{ order.status }}
-            </span>
+            <div class="header-right">
+              <button *ngIf="order.isBalancePaid" (click)="openInvoiceModal(order)" class="invoice-icon-btn" title="View & Download Official Tax Invoice">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <polyline points="10 9 9 9 8 9"/>
+                </svg>
+                <span>TAX INVOICE</span>
+              </button>
+              <span class="status-badge" [class.shipped]="order.status === 'SHIPPED'" [class.delivered]="order.status === 'DELIVERED'">
+                {{ order.status }}
+              </span>
+            </div>
           </div>
 
           <!-- Live Order Progress Bar -->
@@ -103,9 +115,21 @@ import { Alert } from '../../utils/alert.utils';
             </button>
           </div>
 
-          <!-- Paid Confirmation Badge -->
+          <!-- Paid Confirmation Badge with File / Invoice Icon -->
           <div class="paid-confirmation-banner mt-4" *ngIf="order.isBalancePaid">
-            <span>✓ 100% Full Order Payment Complete • Thank you for shopping with Jhulki Haute Couture!</span>
+            <div class="paid-banner-left">
+              <span>✓ 100% Full Order Payment Complete • Thank you for shopping with Jhulki Haute Couture!</span>
+            </div>
+            <button (click)="openInvoiceModal(order)" class="luxury-invoice-btn" title="View & Download Official Tax Invoice">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+              <span>TAX INVOICE</span>
+            </button>
           </div>
 
           <!-- Order Items -->
@@ -123,7 +147,7 @@ import { Alert } from '../../utils/alert.utils';
           <!-- Order Summary Footer with Breakdown -->
           <div class="order-footer-breakdown mt-3">
             <div class="footer-row" *ngIf="getBogoDiscountAmount(order) > 0">
-              <span class="sub-label gold-text">🎁 BOGO SPECIAL DISCOUNT APPLIED:</span>
+              <span class="sub-label gold-text">BOGO SPECIAL DISCOUNT APPLIED:</span>
               <span class="val gold-text">- ₹{{ getBogoDiscountAmount(order) | number:'1.2-2' }}</span>
             </div>
             
@@ -199,6 +223,166 @@ import { Alert } from '../../utils/alert.utils';
               <span *ngIf="!isProcessing()">VERIFY & COMPLETE 80% PAYMENT (₹{{ getBalanceDueAmount(selectedOrderForPayment) | number:'1.2-2' }})</span>
               <span *ngIf="isProcessing()">VERIFYING PAYMENT...</span>
             </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Official Tax Invoice Modal Overlay -->
+      <div class="invoice-modal-backdrop" *ngIf="showInvoiceModal()" (click)="showInvoiceModal.set(false)">
+        <div class="invoice-modal-card" (click)="$event.stopPropagation()">
+          <div class="invoice-action-bar">
+            <span class="action-title">Tax Invoice • Order #{{ selectedInvoiceOrder?.orderNumber }}</span>
+            <div class="action-btns">
+              <button (click)="printInvoice()" class="print-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                  <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                  <rect x="6" y="14" width="12" height="8"></rect>
+                </svg>
+                <span>PRINT / SAVE PDF</span>
+              </button>
+              <button class="close-modal-btn" (click)="showInvoiceModal.set(false)">✕</button>
+            </div>
+          </div>
+
+          <!-- Printable Invoice Sheet -->
+          <div class="printable-invoice" id="printableInvoice" *ngIf="selectedInvoiceOrder">
+            <!-- Brand Header -->
+            <div class="inv-header">
+              <div class="brand-info">
+                <h2 class="brand-name">JHULKI HAUTE COUTURE</h2>
+                <p class="brand-sub">Haute Couture Ethnic Wear & Fashion</p>
+                <p class="company-details">
+                  Jhulki Haute Couture Pvt. Ltd.<br/>
+                  Email: jhulki.official@gmail.com | Web: www.jhulki.store
+                </p>
+              </div>
+              <div class="inv-badge-wrap">
+                <div class="tax-inv-badge">TAX INVOICE</div>
+                <table class="meta-mini-table">
+                  <tr>
+                    <td class="m-lbl">Invoice No:</td>
+                    <td class="m-val bold">INV-{{ selectedInvoiceOrder.orderNumber }}</td>
+                  </tr>
+                  <tr>
+                    <td class="m-lbl">Invoice Date:</td>
+                    <td class="m-val">{{ selectedInvoiceOrder.createdAt | date:'longDate' }}</td>
+                  </tr>
+                  <tr>
+                    <td class="m-lbl">Payment Status:</td>
+                    <td class="m-val green-text bold">✓ PAID (100% Full)</td>
+                  </tr>
+                  <tr>
+                    <td class="m-lbl">Payment Mode:</td>
+                    <td class="m-val">{{ selectedInvoiceOrder.paymentMethod || 'UPI / Card' }}</td>
+                  </tr>
+                  <tr *ngIf="selectedInvoiceOrder.trackingId">
+                    <td class="m-lbl">AWB Tracking:</td>
+                    <td class="m-val bold">{{ selectedInvoiceOrder.trackingId }}</td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+
+            <div class="inv-divider"></div>
+
+            <!-- Addresses -->
+            <div class="inv-address-grid">
+              <div class="addr-card-block">
+                <span class="addr-lbl">BILLED & SHIPPED TO:</span>
+                <p class="cust-name">{{ selectedInvoiceOrder.shippingName }}</p>
+                <p class="cust-address">
+                  {{ selectedInvoiceOrder.shippingStreet }}<br/>
+                  {{ selectedInvoiceOrder.shippingCity }}, {{ selectedInvoiceOrder.shippingState }} - {{ selectedInvoiceOrder.shippingZip }}<br/>
+                  India
+                </p>
+                <p class="cust-contact">Phone: {{ selectedInvoiceOrder.shippingPhone }}</p>
+              </div>
+            </div>
+
+            <!-- Items Table -->
+            <table class="inv-table mt-3">
+              <thead>
+                <tr>
+                  <th class="text-center" style="width: 40px;">#</th>
+                  <th>Item Description</th>
+                  <th class="text-center">Size</th>
+                  <th class="text-center">Qty</th>
+                  <th class="text-right">Unit Price</th>
+                  <th class="text-right">Amount (₹)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of selectedInvoiceOrder.items; let i = index">
+                  <td class="text-center">{{ i + 1 }}</td>
+                  <td>
+                    <strong class="item-title-text">{{ item.product?.name || 'Jhulki Haute Couture Item' }}</strong>
+                  </td>
+                  <td class="text-center">{{ item.size }}</td>
+                  <td class="text-center">{{ item.quantity }}</td>
+                  <td class="text-right">₹{{ item.price | number:'1.2-2' }}</td>
+                  <td class="text-right">₹{{ (item.price * item.quantity) | number:'1.2-2' }}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- Summary & Tax Section -->
+            <div class="inv-footer-grid mt-3">
+              <div class="terms-box">
+                <span class="terms-title">TERMS & CONDITIONS:</span>
+                <ol class="terms-list">
+                  <li><strong>Return & Exchange Window:</strong> 7-day return and exchange period from delivery date for unused items with tags intact.</li>
+                  <li><strong>Ethnic Wear Damage Policy:</strong> If embroidery, hand-carved mirrorwork, zari detailing, or stone embellishments on ethnic wear / chaniya choli are damaged, pulled, or altered, <u>no return or refund will be accepted</u>.</li>
+                  <li><strong>Oxidized & Fine Jewelry Care:</strong> Antique oxidized silver finish is handcrafted. Avoid direct contact with perfume, moisture, hairsprays, or harsh chemicals to prevent discoloration and retain original luster.</li>
+                  <li>This is a computer-generated tax invoice requiring no physical signature.</li>
+                </ol>
+              </div>
+
+              <div class="totals-box">
+                <table class="totals-table">
+                  <tr *ngIf="getBogoDiscountAmount(selectedInvoiceOrder) > 0">
+                    <td class="t-lbl">BOGO Offer Discount:</td>
+                    <td class="t-val green-text">- ₹{{ getBogoDiscountAmount(selectedInvoiceOrder) | number:'1.2-2' }}</td>
+                  </tr>
+                  <tr>
+                    <td class="t-lbl">Subtotal:</td>
+                    <td class="t-val">₹{{ selectedInvoiceOrder.totalAmount | number:'1.2-2' }}</td>
+                  </tr>
+                  <tr>
+                    <td class="t-lbl">GST Included (3%):</td>
+                    <td class="t-val">₹{{ (selectedInvoiceOrder.totalAmount * 0.03 / 1.03) | number:'1.2-2' }}</td>
+                  </tr>
+                  <tr class="highlight-total-row">
+                    <td class="t-lbl">Total Invoice Amount:</td>
+                    <td class="t-val">₹{{ selectedInvoiceOrder.totalAmount | number:'1.2-2' }}</td>
+                  </tr>
+                  <tr>
+                    <td class="t-lbl">Advance Paid (20%):</td>
+                    <td class="t-val">₹{{ getAdvancePaidAmount(selectedInvoiceOrder) | number:'1.2-2' }}</td>
+                  </tr>
+                  <tr>
+                    <td class="t-lbl">Balance Paid (80%):</td>
+                    <td class="t-val">₹{{ getBalanceDueAmount(selectedInvoiceOrder) | number:'1.2-2' }}</td>
+                  </tr>
+                  <tr class="zero-balance-row">
+                    <td class="t-lbl">BALANCE OUTSTANDING:</td>
+                    <td class="t-val green-text">₹0.00 (PAID IN FULL)</td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+
+            <!-- Authenticity Stamp -->
+            <div class="inv-stamp-row mt-4">
+              <div class="stamp-badge font-serif">
+                <span class="stamp-top">JHULKI ATELIER</span>
+                <span class="stamp-bot">VERIFIED PAYMENT</span>
+              </div>
+              <div class="sign-block">
+                <span class="sign-line">Authorized Signatory</span>
+                <span class="company-sub">Jhulki Haute Couture Pvt. Ltd.</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -674,11 +858,450 @@ import { Alert } from '../../utils/alert.utils';
     .full-width {
       width: 100%;
     }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .invoice-icon-btn {
+      background: rgba(212, 175, 55, 0.15);
+      border: 1px solid rgba(212, 175, 55, 0.4);
+      color: #d4af37;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.25s ease;
+    }
+
+    .invoice-icon-btn:hover {
+      background: rgba(212, 175, 55, 0.3);
+      border-color: #d4af37;
+      color: #fff;
+    }
+
+    .paid-confirmation-banner {
+      background: rgba(52, 199, 89, 0.12);
+      border: 1px solid rgba(52, 199, 89, 0.3);
+      color: #34c759;
+      padding: 12px 18px;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .paid-banner-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .luxury-invoice-btn {
+      background: #34c759;
+      color: #000;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.25s ease;
+    }
+
+    .luxury-invoice-btn:hover {
+      background: #2cb04d;
+      transform: translateY(-1px);
+    }
+
+    /* Invoice Modal Styles */
+    .invoice-modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .invoice-modal-card {
+      background: #fff;
+      color: #111;
+      width: 100%;
+      max-width: 780px;
+      border-radius: 8px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.9);
+      overflow: hidden;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .invoice-action-bar {
+      background: #111116;
+      color: #fff;
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+    }
+
+    .action-title {
+      font-size: 0.85rem;
+      letter-spacing: 0.08em;
+      color: #f3e5ab;
+      font-weight: 600;
+    }
+
+    .action-btns {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .print-btn {
+      background: #d4af37;
+      color: #000;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .print-btn:hover {
+      background: #e5be48;
+    }
+
+    .close-modal-btn {
+      background: none;
+      border: none;
+      color: #aaa;
+      font-size: 1.2rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .close-modal-btn:hover {
+      color: #ff6b6b;
+    }
+
+    .printable-invoice {
+      padding: 36px 40px;
+      background: #ffffff;
+      color: #111111;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      overflow-y: auto;
+    }
+
+    .inv-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .brand-name {
+      font-family: serif;
+      font-size: 1.6rem;
+      letter-spacing: 0.12em;
+      color: #111;
+      margin: 0;
+    }
+
+    .brand-sub {
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      color: #b5952f;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .company-details {
+      font-size: 0.75rem;
+      color: #555;
+      line-height: 1.45;
+      margin-top: 8px;
+    }
+
+    .tax-inv-badge {
+      background: #111;
+      color: #d4af37;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      padding: 6px 14px;
+      border-radius: 2px;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .meta-mini-table {
+      font-size: 0.78rem;
+      color: #333;
+    }
+
+    .meta-mini-table td {
+      padding: 2px 4px;
+    }
+
+    .m-lbl {
+      color: #666;
+      text-align: right;
+    }
+
+    .m-val {
+      padding-left: 8px !important;
+    }
+
+    .bold { font-weight: 700; }
+
+    .inv-divider {
+      height: 1px;
+      background: #e0e0e0;
+      margin: 20px 0;
+    }
+
+    .inv-address-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .addr-lbl {
+      font-size: 0.68rem;
+      letter-spacing: 0.12em;
+      color: #888;
+      font-weight: 700;
+    }
+
+    .cust-name {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #111;
+      margin-top: 4px;
+    }
+
+    .cust-address {
+      font-size: 0.82rem;
+      color: #444;
+      line-height: 1.4;
+      margin-top: 2px;
+    }
+
+    .cust-contact {
+      font-size: 0.78rem;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .inv-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      font-size: 0.82rem;
+    }
+
+    .inv-table th {
+      background: #f8f9fa;
+      border-top: 2px solid #111;
+      border-bottom: 2px solid #111;
+      padding: 10px 8px;
+      text-align: left;
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #111;
+    }
+
+    .inv-table td {
+      padding: 12px 8px;
+      border-bottom: 1px solid #eee;
+      color: #222;
+    }
+
+    .text-center { text-align: center; }
+    .text-right { text-align: right; }
+
+    .inv-footer-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 30px;
+      margin-top: 20px;
+    }
+
+    .terms-box {
+      flex: 1;
+      background: #fafafa;
+      padding: 12px 16px;
+      border-radius: 4px;
+      border: 1px solid #eee;
+    }
+
+    .terms-title {
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      font-weight: 700;
+      color: #555;
+    }
+
+    .terms-list {
+      font-size: 0.72rem;
+      color: #666;
+      padding-left: 14px;
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    .totals-box {
+      width: 280px;
+    }
+
+    .totals-table {
+      width: 100%;
+      font-size: 0.82rem;
+    }
+
+    .totals-table td {
+      padding: 5px 0;
+    }
+
+    .t-lbl {
+      color: #555;
+    }
+
+    .t-val {
+      text-align: right;
+      font-weight: 600;
+      color: #111;
+    }
+
+    .highlight-total-row {
+      border-top: 1px solid #111;
+      border-bottom: 1px solid #111;
+      font-weight: 700;
+    }
+
+    .highlight-total-row td {
+      padding: 8px 0;
+      font-size: 0.9rem;
+    }
+
+    .zero-balance-row td {
+      padding-top: 8px;
+      font-weight: 700;
+    }
+
+    .inv-stamp-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-top: 1px dashed #ccc;
+      padding-top: 20px;
+    }
+
+    .stamp-badge {
+      border: 2px double #b5952f;
+      padding: 8px 16px;
+      border-radius: 50px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #b5952f;
+      transform: rotate(-3deg);
+    }
+
+    .stamp-top {
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      font-weight: 700;
+    }
+
+    .stamp-bot {
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+    }
+
+    .sign-block {
+      text-align: right;
+    }
+
+    .sign-line {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #111;
+      display: block;
+      border-top: 1px solid #111;
+      padding-top: 4px;
+      width: 180px;
+    }
+
+    .company-sub {
+      font-size: 0.7rem;
+      color: #666;
+    }
+
+    /* Print CSS Override */
+    @media print {
+      body * {
+        visibility: hidden !important;
+      }
+      #printableInvoice, #printableInvoice * {
+        visibility: visible !important;
+      }
+      #printableInvoice {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+      }
+      .invoice-modal-backdrop, .invoice-modal-card {
+        background: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        position: static !important;
+      }
+      .invoice-action-bar {
+        display: none !important;
+      }
+    }
   `]
 })
 export class TrackOrderComponent implements OnInit {
   showBalanceModal = signal(false);
+  showInvoiceModal = signal(false);
   selectedOrderForPayment: any = null;
+  selectedInvoiceOrder: any = null;
   utrNumber: string = '';
   isProcessing = signal(false);
 
@@ -800,6 +1423,105 @@ export class TrackOrderComponent implements OnInit {
       });
     } else {
       onComplete();
+    }
+  }
+
+  openInvoiceModal(order: any) {
+    this.selectedInvoiceOrder = order;
+    this.showInvoiceModal.set(true);
+  }
+
+  printInvoice() {
+    const elem = document.getElementById('printableInvoice');
+    if (!elem) {
+      window.print();
+      return;
+    }
+    const printFrame = document.createElement('iframe');
+    printFrame.style.position = 'fixed';
+    printFrame.style.right = '0';
+    printFrame.style.bottom = '0';
+    printFrame.style.width = '0';
+    printFrame.style.height = '0';
+    printFrame.style.border = '0';
+    document.body.appendChild(printFrame);
+
+    const doc = printFrame.contentWindow?.document;
+    if (doc) {
+      doc.open();
+      doc.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Tax Invoice - ${this.selectedInvoiceOrder?.orderNumber || 'Jhulki'}</title>
+            <style>
+              * { box-sizing: border-box; }
+              body { margin: 0; padding: 24px; font-family: 'Helvetica Neue', Arial, sans-serif; color: #111; background: #fff; }
+              .inv-header { display: flex; justify-content: space-between; align-items: flex-start; }
+              .brand-name { font-family: serif; font-size: 1.6rem; letter-spacing: 0.12em; color: #111; margin: 0; }
+              .brand-sub { font-size: 0.75rem; letter-spacing: 0.15em; color: #b5952f; text-transform: uppercase; margin-top: 2px; }
+              .company-details { font-size: 0.75rem; color: #555; line-height: 1.45; margin-top: 8px; }
+              .tax-inv-badge { background: #111; color: #d4af37; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.15em; padding: 6px 14px; border-radius: 2px; text-align: center; margin-bottom: 8px; }
+              .meta-mini-table { font-size: 0.78rem; color: #333; }
+              .meta-mini-table td { padding: 2px 4px; }
+              .m-lbl { color: #666; text-align: right; }
+              .m-val { padding-left: 8px !important; }
+              .bold { font-weight: 700; }
+              .green-text { color: #2cb04d; }
+              .inv-divider { height: 1px; background: #e0e0e0; margin: 20px 0; }
+              .inv-address-grid { display: flex; justify-content: space-between; gap: 20px; }
+              .addr-lbl { font-size: 0.68rem; letter-spacing: 0.12em; color: #888; font-weight: 700; }
+              .cust-name { font-size: 0.95rem; font-weight: 700; color: #111; margin-top: 4px; margin-bottom: 0; }
+              .cust-address { font-size: 0.82rem; color: #444; line-height: 1.4; margin-top: 2px; }
+              .cust-contact { font-size: 0.78rem; color: #666; margin-top: 4px; }
+              .inv-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.82rem; }
+              .inv-table th { background: #f8f9fa; border-top: 2px solid #111; border-bottom: 2px solid #111; padding: 10px 8px; text-align: left; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: #111; }
+              .inv-table td { padding: 12px 8px; border-bottom: 1px solid #eee; color: #222; }
+              .text-center { text-align: center; }
+              .text-right { text-align: right; }
+              .mt-3 { margin-top: 16px; }
+              .mt-4 { margin-top: 24px; }
+              .font-serif { font-family: serif; }
+              .inv-footer-grid { display: flex; justify-content: space-between; gap: 30px; margin-top: 20px; }
+              .terms-box { flex: 1; background: #fafafa; padding: 12px 16px; border-radius: 4px; border: 1px solid #eee; }
+              .terms-title { font-size: 0.68rem; letter-spacing: 0.1em; font-weight: 700; color: #555; }
+              .terms-list { font-size: 0.72rem; color: #666; padding-left: 14px; margin-top: 6px; line-height: 1.5; }
+              .totals-box { width: 280px; }
+              .totals-table { width: 100%; font-size: 0.82rem; }
+              .totals-table td { padding: 5px 0; }
+              .t-lbl { color: #555; }
+              .t-val { text-align: right; font-weight: 600; color: #111; }
+              .highlight-total-row { border-top: 1px solid #111; border-bottom: 1px solid #111; font-weight: 700; }
+              .highlight-total-row td { padding: 8px 0; font-size: 0.9rem; }
+              .zero-balance-row td { padding-top: 8px; font-weight: 700; }
+              .inv-stamp-row { display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px dashed #ccc; padding-top: 20px; }
+              .stamp-badge { border: 2px double #b5952f; padding: 8px 16px; border-radius: 50px; display: flex; flex-direction: column; align-items: center; color: #b5952f; transform: rotate(-3deg); }
+              .stamp-top { font-size: 0.7rem; letter-spacing: 0.15em; font-weight: 700; }
+              .stamp-bot { font-size: 0.6rem; letter-spacing: 0.1em; }
+              .sign-block { text-align: right; }
+              .sign-line { font-size: 0.8rem; font-weight: 700; color: #111; display: block; border-top: 1px solid #111; padding-top: 4px; width: 180px; }
+              .company-sub { font-size: 0.7rem; color: #666; }
+              @media print {
+                @page { margin: 12mm; size: portrait; }
+                body { padding: 0; }
+              }
+            </style>
+          </head>
+          <body>
+            ${elem.innerHTML}
+          </body>
+        </html>
+      `);
+      doc.close();
+      setTimeout(() => {
+        printFrame.contentWindow?.focus();
+        printFrame.contentWindow?.print();
+        setTimeout(() => {
+          if (document.body.contains(printFrame)) {
+            document.body.removeChild(printFrame);
+          }
+        }, 1000);
+      }, 300);
     }
   }
 }

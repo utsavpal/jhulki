@@ -48,7 +48,7 @@ import { Alert } from '../../utils/alert.utils';
           <!-- BOGO Exclusive Promo Banner Box -->
           <div class="bogo-promo-box glass-card mb-4" *ngIf="product()?.isBogoEnabled">
             <div class="bogo-header">
-              <span class="bogo-tag">🎁 BOGO SPECIAL OFFER</span>
+              <span class="bogo-tag">BOGO SPECIAL OFFER</span>
               <span class="bogo-sub">BUY 1 GET 1 FREE</span>
             </div>
             <p class="bogo-desc">

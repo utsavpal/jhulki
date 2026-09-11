@@ -110,7 +110,7 @@ import { Alert } from '../../utils/alert.utils';
                       {{ product.isFeatured ? 'FEATURED' : 'REGULAR' }}
                     </span>
                     <span *ngIf="product.isBogoEnabled" class="bogo-chip" style="font-size:0.55rem; width:fit-content;">
-                      🎁 BOGO ACTIVE
+                      BOGO ACTIVE
                     </span>
                   </div>
                 </td>

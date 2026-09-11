@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
         isSaleEnabled: !!isSaleEnabled,
         isBogoEnabled: !!isBogoEnabled,
         bogoPairProductId: bogoPairProductId || null,
-        images: images && images.length > 0 ? images : ['https://images.unsplash.com/photo-1539109136881-3be0616acf4b?q=80&w=1000'],
+        images: images && images.length > 0 ? images : ['/products/chaniya-choli/full.jpg'],
         categoryId: category.id,
         isFeatured: !!isFeatured,
         isNewArrival: isNewArrival !== undefined ? !!isNewArrival : true,

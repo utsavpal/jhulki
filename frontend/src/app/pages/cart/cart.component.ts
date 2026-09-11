@@ -29,7 +29,7 @@ import { Alert } from '../../utils/alert.utils';
               <p class="size-info">Selected Size: <strong>{{ item.size }}</strong></p>
               <div class="price">
                 ₹{{ ecommerceService.getEffectivePrice(item.product) }}
-                <span *ngIf="item.product.isBogoEnabled" class="bogo-chip ml-2">🎁 BOGO ELIGIBLE</span>
+                <span *ngIf="item.product.isBogoEnabled" class="bogo-chip ml-2">BOGO ELIGIBLE</span>
               </div>
             </div>
 
