@@ -1,6 +1,6 @@
 import { Component, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule, ActivatedRoute } from '@angular/router';
+import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { EcommerceService } from '../../services/ecommerce.service';
 import { AuthService } from '../../services/auth.service';
@@ -23,23 +23,14 @@ import { Product } from '../../models/ecommerce.model';
 
       <!-- Filters & Sorting Controls -->
       <div class="controls-bar glass-card">
-        <div class="category-pills">
-          <button 
-            *ngFor="let cat of categories" 
-            (click)="selectCategory(cat.slug)"
-            [class.active]="currentCategory === cat.slug && !isBogoFiltered"
-            class="pill-btn"
-          >
-            {{ cat.name }}
-          </button>
-          
+        <div class="filter-actions-wrap">
           <!-- BOGO Quick Filter Button -->
           <button 
             (click)="toggleBogoFilter()" 
             [class.active]="isBogoFiltered"
             class="pill-btn bogo-pill-btn"
           >
-            BOGO OFFERS
+            🔥 BOGO OFFERS
           </button>
         </div>
 
@@ -55,8 +46,19 @@ import { Product } from '../../models/ecommerce.model';
         </div>
       </div>
 
+      <!-- Luxury Loading State -->
+      <div *ngIf="isLoading()" class="luxury-loader-card glass-card mt-5">
+        <div class="luxury-spinner">
+          <div class="spinner-ring ring-outer"></div>
+          <div class="spinner-ring ring-inner"></div>
+          <div class="brand-sparkle">✨</div>
+        </div>
+        <h3 class="font-serif loader-headline mt-4">Unveiling Perfection for You...</h3>
+        <p class="loader-quote">"Crafting extraordinary elegance for extraordinary moments."</p>
+      </div>
+
       <!-- Products Grid -->
-      <div class="products-grid mt-5">
+      <div *ngIf="!isLoading() && products().length > 0" class="products-grid mt-5">
         <div *ngFor="let product of products()" class="product-card glass-card">
           <div class="product-image-wrap">
             <!-- BOGO Corner Ribbon Badge -->
@@ -64,7 +66,7 @@ import { Product } from '../../models/ecommerce.model';
               <span>BUY 1 GET 1 FREE</span>
             </div>
 
-            <img [src]="product.images[0]" [alt]="product.name" />
+            <img [src]="product.images?.[0] || '/images/cat-women-chaniya-choli.jpg'" (error)="onImageError($event)" [alt]="product.name" />
             <button 
               class="wishlist-btn" 
               (click)="toggleWishlist($event, product.id)"
@@ -85,15 +87,30 @@ import { Product } from '../../models/ecommerce.model';
                 {{ ecommerceService.getSaleCountdownLabel(product) }}
               </span>
             </div>
-            <a [routerLink]="['/product', product.id]" class="view-details-btn">
-              VIEW DETAILS
-            </a>
+            <div class="card-action-btns">
+              <a [routerLink]="['/product', product.id]" class="view-details-btn">
+                VIEW DETAILS
+              </a>
+              <button 
+                *ngIf="getCartQuantity(product.id) === 0" 
+                (click)="quickAddToCart($event, product)" 
+                class="quick-add-cart-btn"
+              >
+                + ADD TO CART
+              </button>
+
+              <div *ngIf="getCartQuantity(product.id) > 0" class="qty-spinner-btn" (click)="$event.stopPropagation()">
+                <button (click)="decreaseCartQty($event, product)" class="qty-btn">-</button>
+                <span class="qty-val">{{ getCartQuantity(product.id) }}</span>
+                <button (click)="increaseCartQty($event, product)" class="qty-btn">+</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Empty State -->
-      <div *ngIf="products().length === 0" class="empty-state glass-card">
+      <div *ngIf="!isLoading() && products().length === 0" class="empty-state glass-card">
         <h3 class="font-serif">No Luxury Pieces Found</h3>
         <p>There are no products matching your selected category or search filters.</p>
         <button (click)="resetFilters()" class="luxury-btn-primary mt-3">Reset Filters</button>
@@ -132,6 +149,7 @@ import { Product } from '../../models/ecommerce.model';
       align-items: center;
       flex-wrap: wrap;
       gap: 20px;
+      margin-bottom: 32px;
     }
 
     .category-pills {
@@ -196,6 +214,7 @@ import { Product } from '../../models/ecommerce.model';
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       gap: 30px;
+      margin-top: 32px !important;
     }
 
     .product-card {
@@ -319,12 +338,18 @@ import { Product } from '../../models/ecommerce.model';
       color: #666;
     }
 
-    .view-details-btn {
+    .card-action-btns {
       margin-top: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .view-details-btn {
       border: 1px solid rgba(255,255,255,0.15);
       color: #d0d0d0;
       text-align: center;
-      padding: 10px;
+      padding: 9px;
       font-size: 0.75rem;
       letter-spacing: 0.15em;
       transition: var(--transition-smooth);
@@ -336,21 +361,259 @@ import { Product } from '../../models/ecommerce.model';
       background: rgba(212,175,55,0.05);
     }
 
+    .quick-add-cart-btn {
+      border: 1px solid var(--color-gold-primary);
+      background: rgba(212, 175, 55, 0.12);
+      color: var(--color-gold-light);
+      text-align: center;
+      padding: 9px;
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+    }
+
+    .quick-add-cart-btn:hover {
+      background: var(--color-gold-primary);
+      color: #000;
+      box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+    }
+
+    .qty-spinner-btn {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid var(--color-gold-primary);
+      background: rgba(212, 175, 55, 0.15);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .qty-btn {
+      background: transparent;
+      border: none;
+      color: var(--color-gold-light);
+      font-size: 1rem;
+      font-weight: 700;
+      width: 34px;
+      height: 33px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s ease;
+    }
+
+    .qty-btn:hover {
+      background: var(--color-gold-primary);
+      color: #000;
+    }
+
+    .qty-val {
+      color: #fff;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .luxury-loader-card {
+      text-align: center;
+      padding: 80px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(10, 10, 14, 0.45);
+      border: 1px solid rgba(212, 175, 55, 0.2);
+    }
+
+    .luxury-spinner {
+      position: relative;
+      width: 70px;
+      height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .spinner-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 2px solid transparent;
+    }
+
+    .ring-outer {
+      width: 66px;
+      height: 66px;
+      border-top-color: var(--color-gold-primary);
+      border-bottom-color: var(--color-gold-primary);
+      animation: spin 1.8s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+    }
+
+    .ring-inner {
+      width: 44px;
+      height: 44px;
+      border-left-color: #f3e5ab;
+      border-right-color: #f3e5ab;
+      animation: spin-reverse 1.2s linear infinite;
+    }
+
+    .brand-sparkle {
+      font-size: 1.3rem;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes spin-reverse {
+      0% { transform: rotate(360deg); }
+      100% { transform: rotate(0deg); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; transform: scale(0.9); }
+      50% { opacity: 1; transform: scale(1.15); }
+    }
+
+    .loader-headline {
+      font-size: 1.4rem;
+      color: #fff;
+      letter-spacing: 0.08em;
+    }
+
+    .loader-quote {
+      font-size: 0.95rem;
+      font-style: italic;
+      color: var(--color-gold-light);
+      margin-top: 6px;
+      letter-spacing: 0.03em;
+    }
+
     .empty-state {
       text-align: center;
       padding: 60px 24px;
       margin-top: 40px;
     }
 
-    .empty-state h3 {
-      font-size: 1.8rem;
-      color: var(--color-gold-light);
-      margin-bottom: 8px;
+    @media (max-width: 768px) {
+      .products-page {
+        padding: 16px 8px 60px;
+        width: 100%;
+        max-width: 100vw;
+        box-sizing: border-box;
+        overflow-x: hidden;
+      }
+      .page-header {
+        padding: 0 6px;
+      }
+      .page-title {
+        font-size: 1.6rem;
+      }
+      .page-desc {
+        font-size: 0.8rem;
+      }
+      .controls-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        padding: 10px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .filter-actions-wrap {
+        width: 100%;
+      }
+      .bogo-pill-btn {
+        width: 100%;
+        text-align: center;
+      }
+      .sort-wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        gap: 8px;
+      }
+      .sort-wrap label {
+        font-size: 0.7rem;
+        flex-shrink: 0;
+      }
+      .sort-wrap select {
+        flex-grow: 1;
+        width: 100%;
+        max-width: 100%;
+        padding: 6px 8px;
+        font-size: 0.75rem;
+        box-sizing: border-box;
+      }
+      .products-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        width: 100%;
+        max-width: 100vw;
+        box-sizing: border-box;
+        padding: 0 2px;
+      }
+      .product-card {
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+      .product-image-wrap {
+        height: 200px;
+        width: 100%;
+      }
+      .product-info {
+        padding: 8px 6px;
+        min-width: 0;
+      }
+      .product-name {
+        font-size: 0.82rem;
+        line-height: 1.25;
+        margin: 3px 0 6px;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .product-price {
+        gap: 6px;
+        margin-bottom: 8px;
+        flex-wrap: wrap;
+      }
+      .current-price {
+        font-size: 0.95rem;
+      }
+      .old-price {
+        font-size: 0.75rem;
+      }
+      .view-details-btn {
+        width: 100%;
+        padding: 6px 2px;
+        font-size: 0.62rem;
+        letter-spacing: 0.08em;
+        text-align: center;
+        box-sizing: border-box;
+      }
     }
   `]
 })
 export class ProductsComponent implements OnInit {
   products = signal<Product[]>([]);
+
+  onImageError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    if (img && !img.src.includes('jhulki_brand_logo')) {
+      img.src = '/images/cat-women-chaniya-choli.jpg';
+    }
+  }
   categories = [
     { name: 'All Collections', slug: 'all' },
     { name: 'Men', slug: 'men' },
@@ -371,10 +634,14 @@ export class ProductsComponent implements OnInit {
   constructor(
     public ecommerceService: EcommerceService,
     private authService: AuthService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private router: Router
   ) {}
 
   ngOnInit() {
+    if (this.authService.isLoggedIn()) {
+      this.ecommerceService.fetchCart().subscribe();
+    }
     this.route.queryParams.subscribe(params => {
       if (params['category']) this.currentCategory = params['category'];
       if (params['search']) this.currentSearch = params['search'];
@@ -416,14 +683,23 @@ export class ProductsComponent implements OnInit {
     this.applyFilters();
   }
 
+  isLoading = signal<boolean>(true);
+
   applyFilters() {
-    this.ecommerceService.fetchProducts(this.currentCategory, this.currentSearch, this.currentSort).subscribe(data => {
-      let result = [...data];
-      if (this.isBogoFiltered || this.currentSort === 'bogo-first') {
-        // Sort BOGO enabled items first
-        result.sort((a, b) => (b.isBogoEnabled ? 1 : 0) - (a.isBogoEnabled ? 1 : 0));
+    this.isLoading.set(true);
+    this.ecommerceService.fetchProducts(this.currentCategory, this.currentSearch, this.currentSort).subscribe({
+      next: (data) => {
+        let result = [...data];
+        if (this.isBogoFiltered || this.currentSort === 'bogo-first') {
+          // Sort BOGO enabled items first
+          result.sort((a, b) => (b.isBogoEnabled ? 1 : 0) - (a.isBogoEnabled ? 1 : 0));
+        }
+        this.products.set(result);
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.isLoading.set(false);
       }
-      this.products.set(result);
     });
   }
 
@@ -434,6 +710,55 @@ export class ProductsComponent implements OnInit {
       return;
     }
     this.ecommerceService.toggleWishlist(productId).subscribe();
+  }
+
+  quickAddToCart(event: MouseEvent, product: Product) {
+    event.stopPropagation();
+    if (!this.authService.isLoggedIn()) {
+      Alert.info('Sign In Required', 'Please sign in to add items to your shopping bag.').then(() => {
+        this.router.navigate(['/auth']);
+      });
+      return;
+    }
+
+    const availableSize = product.stock && product.stock.length > 0 
+      ? (product.stock.find(s => s.quantity > 0)?.size || product.stock[0].size)
+      : 'M';
+
+    this.ecommerceService.addToCart(product.id, availableSize, 1).subscribe({
+      next: () => {
+        // Success silent update
+      },
+      error: (err) => Alert.error('Add Failed', err?.error?.error || 'Failed to add item to bag')
+    });
+  }
+
+  getCartQuantity(productId: string): number {
+    const items = this.ecommerceService.cartItems();
+    return items
+      .filter(item => item.productId === productId)
+      .reduce((sum, item) => sum + item.quantity, 0);
+  }
+
+  increaseCartQty(event: MouseEvent, product: Product) {
+    event.stopPropagation();
+    const availableSize = product.stock && product.stock.length > 0 
+      ? (product.stock.find(s => s.quantity > 0)?.size || product.stock[0].size)
+      : 'M';
+    this.ecommerceService.addToCart(product.id, availableSize, 1).subscribe();
+  }
+
+  decreaseCartQty(event: MouseEvent, product: Product) {
+    event.stopPropagation();
+    const items = this.ecommerceService.cartItems().filter(item => item.productId === product.id);
+    if (items.length === 0) return;
+
+    const itemToDecrement = items[items.length - 1];
+    if (itemToDecrement.quantity > 1) {
+      this.ecommerceService.addToCart(product.id, itemToDecrement.size, -1).subscribe();
+    } else {
+      this.ecommerceService.removeFromCart(itemToDecrement.id).subscribe();
+    }
   }
 }
 

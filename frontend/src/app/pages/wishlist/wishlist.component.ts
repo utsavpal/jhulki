@@ -19,7 +19,7 @@ import { WishlistItem } from '../../models/ecommerce.model';
       <div *ngIf="ecommerceService.wishlistItems().length > 0; else emptyWishlist" class="products-grid">
         <div *ngFor="let item of ecommerceService.wishlistItems()" class="product-card glass-card">
           <div class="product-image-wrap">
-            <img [src]="item.product.images[0]" [alt]="item.product.name" />
+            <img [src]="item.product.images?.[0] || '/images/cat-women-chaniya-choli.jpg'" (error)="onImageError($event)" [alt]="item.product.name" />
             <button class="remove-btn" (click)="removeWishlist(item.productId)" title="Remove item">
               &times;
             </button>
@@ -139,9 +139,33 @@ import { WishlistItem } from '../../models/ecommerce.model';
       padding: 80px 24px;
     }
 
-    .empty-wishlist h2 {
-      font-size: 2.2rem;
-      color: var(--color-gold-light);
+    @media (max-width: 768px) {
+      .wishlist-page {
+        padding: 20px 12px 60px;
+      }
+      .page-title {
+        font-size: 1.8rem;
+      }
+      .products-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+      .product-image-wrap {
+        height: 220px;
+      }
+      .product-info {
+        padding: 12px;
+      }
+      .product-name {
+        font-size: 0.95rem;
+      }
+      .product-price {
+        font-size: 1.1rem;
+      }
+      .add-bag-btn {
+        padding: 8px 4px;
+        font-size: 0.65rem;
+      }
     }
   `]
 })
@@ -150,6 +174,13 @@ export class WishlistComponent implements OnInit {
     public ecommerceService: EcommerceService,
     private authService: AuthService
   ) {}
+
+  onImageError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    if (img && !img.src.includes('jhulki_brand_logo')) {
+      img.src = '/images/cat-women-chaniya-choli.jpg';
+    }
+  }
 
   ngOnInit() {
     if (this.authService.isLoggedIn()) {

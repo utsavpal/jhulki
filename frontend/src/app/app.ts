@@ -42,6 +42,36 @@ import { getApiUrl } from './services/auth.service';
             <a routerLink="/auth">Sign In / Register</a>
             <button (click)="openApiModal()" class="api-config-link">⚡ Config API Endpoint</button>
           </div>
+
+          <div class="footer-col">
+            <h4 class="footer-title font-serif">QUICK LINKS</h4>
+            <a routerLink="/">Home</a>
+            <a routerLink="/about-us">About Us</a>
+            <a routerLink="/privacy-policy">Privacy & Safety</a>
+            <a routerLink="/terms-of-service">Terms of Service</a>
+            <a routerLink="/shipping-delivery">Shipping & Delivery</a>
+            <a routerLink="/cancellations-return">Cancellations & Return</a>
+            <a routerLink="/refund-policy">Refund Policy</a>
+            <a routerLink="/contact-us">Contact Us</a>
+            <a routerLink="/track-order">Track Order</a>
+            <a routerLink="/careers">Careers</a>
+          </div>
+
+          <div class="footer-col">
+            <h4 class="footer-title font-serif">CUSTOMER SUPPORT</h4>
+            <p class="footer-support-item">
+              <span class="footer-support-label">Mail us:</span><br>
+              <a href="mailto:info&#64;jhulki.store.com" class="footer-support-link">info&#64;jhulki.store.com</a>
+            </p>
+            <p class="footer-support-item">
+              <span class="footer-support-label">Call Us:</span><br>
+              <a href="tel:+918732965683" class="footer-support-link">+91 87329 65683</a>
+            </p>
+            <p class="footer-support-item">
+              <span class="footer-support-label">Timing:</span><br>
+              <span class="footer-support-text">9am-6pm Mon to Fri</span>
+            </p>
+          </div>
         </div>
 
         <div class="footer-bottom">
@@ -102,8 +132,8 @@ import { getApiUrl } from './services/auth.service';
       max-width: 1300px;
       margin: 0 auto;
       display: grid;
-      grid-template-columns: 2fr 1fr 1fr;
-      gap: 50px;
+      grid-template-columns: 2fr 1.2fr 1.2fr 1.2fr 1.4fr;
+      gap: 32px;
     }
 
     .footer-brand {
@@ -116,21 +146,22 @@ import { getApiUrl } from './services/auth.service';
 
     .footer-tagline {
       color: #777788;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
+      line-height: 1.6;
       max-width: 320px;
     }
 
     .footer-title {
-      font-size: 1.1rem;
+      font-size: 0.95rem;
       color: #fff;
       margin-bottom: 16px;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.08em;
     }
 
     .footer-col a, .api-config-link {
       display: block;
       color: #9a9ab0;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       margin-bottom: 10px;
       transition: var(--transition-smooth);
       background: none;
@@ -142,6 +173,32 @@ import { getApiUrl } from './services/auth.service';
 
     .footer-col a:hover, .api-config-link:hover {
       color: var(--color-gold-primary);
+    }
+
+    .footer-support-item {
+      margin-bottom: 12px;
+      font-size: 0.82rem;
+    }
+
+    .footer-support-label {
+      color: #666677;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .footer-support-link {
+      color: #d1d5db !important;
+      margin-bottom: 0 !important;
+      display: inline-block !important;
+    }
+
+    .footer-support-link:hover {
+      color: var(--color-gold-primary) !important;
+    }
+
+    .footer-support-text {
+      color: #a1a1aa;
     }
 
     .footer-bottom {

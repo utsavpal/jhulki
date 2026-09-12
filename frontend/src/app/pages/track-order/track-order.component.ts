@@ -1,4 +1,4 @@
-import { Component, signal, OnInit } from '@angular/core';
+import { Component, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -19,7 +19,18 @@ import { Alert } from '../../utils/alert.utils';
         <p class="subtitle">Real-time status updates from quality inspection to white-glove doorstep delivery.</p>
       </div>
 
-      <div class="orders-container mt-5">
+      <!-- Luxury Loading State -->
+      <div *ngIf="isLoading()" class="luxury-loader-card glass-card mt-5">
+        <div class="luxury-spinner">
+          <div class="spinner-ring ring-outer"></div>
+          <div class="spinner-ring ring-inner"></div>
+          <div class="brand-sparkle">✨</div>
+        </div>
+        <h3 class="font-serif loader-headline mt-4">Retrieving Your Luxury Orders...</h3>
+        <p class="loader-quote">"Crafting extraordinary elegance for extraordinary moments."</p>
+      </div>
+
+      <div class="orders-container mt-5" *ngIf="!isLoading()">
         <div *ngFor="let order of getDisplayOrders()" class="order-card glass-card">
           <!-- Transparent Angled DELIVERED Stamp Watermark -->
           <div class="delivered-watermark-stamp" *ngIf="order.status === 'DELIVERED'">
@@ -31,7 +42,7 @@ import { Alert } from '../../utils/alert.utils';
 
           <div class="order-header-row">
             <div>
-              <span class="order-num font-serif">{{ order.orderNumber }}</span>
+              <span class="order-num">{{ order.orderNumber }}</span>
               <span class="order-date">{{ order.createdAt | date:'mediumDate' }}</span>
             </div>
             <div class="header-right">
@@ -150,15 +161,16 @@ import { Alert } from '../../utils/alert.utils';
             </div>
             
             <div class="footer-main-row">
-              <div class="footer-col">
+              <div class="footer-col" [style.width]="order.isBalancePaid ? '100%' : 'auto'">
                 <span class="f-label">TOTAL ORDER AMOUNT:</span>
                 <span class="f-val total-highlight">₹{{ order.totalAmount | number:'1.2-2' }}</span>
+                <span *ngIf="order.isBalancePaid" class="green-text ml-2" style="font-size:0.75rem; font-weight:700;">(100% FULLY PAID)</span>
               </div>
-              <div class="footer-col">
+              <div class="footer-col" *ngIf="!order.isBalancePaid">
                 <span class="f-label">ADVANCE PAID (20%):</span>
                 <span class="f-val green-highlight">₹{{ getAdvancePaidAmount(order) | number:'1.2-2' }}</span>
               </div>
-              <div class="footer-col">
+              <div class="footer-col" *ngIf="!order.isBalancePaid">
                 <span class="f-label">BALANCE DUE (80%):</span>
                 <span class="f-val gold-highlight">₹{{ getBalanceDueAmount(order) | number:'1.2-2' }}</span>
               </div>
@@ -461,10 +473,12 @@ import { Alert } from '../../utils/alert.utils';
     }
 
     .order-num {
-      font-size: 1.3rem;
+      font-size: 1.25rem;
       color: #d4af37;
       margin-right: 12px;
-      font-weight: 600;
+      font-weight: 700;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      letter-spacing: 0.05em;
     }
 
     .order-date {
@@ -1306,6 +1320,82 @@ import { Alert } from '../../utils/alert.utils';
       color: #666;
     }
 
+    .luxury-loader-card {
+      text-align: center;
+      padding: 70px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(10, 10, 14, 0.45);
+      border: 1px solid rgba(212, 175, 55, 0.2);
+    }
+
+    .luxury-spinner {
+      position: relative;
+      width: 70px;
+      height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .spinner-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 2px solid transparent;
+    }
+
+    .ring-outer {
+      width: 66px;
+      height: 66px;
+      border-top-color: var(--color-gold-primary);
+      border-bottom-color: var(--color-gold-primary);
+      animation: spin 1.8s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+    }
+
+    .ring-inner {
+      width: 44px;
+      height: 44px;
+      border-left-color: #f3e5ab;
+      border-right-color: #f3e5ab;
+      animation: spin-reverse 1.2s linear infinite;
+    }
+
+    .brand-sparkle {
+      font-size: 1.3rem;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes spin-reverse {
+      0% { transform: rotate(360deg); }
+      100% { transform: rotate(0deg); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; transform: scale(0.9); }
+      50% { opacity: 1; transform: scale(1.15); }
+    }
+
+    .loader-headline {
+      font-size: 1.3rem;
+      color: #fff;
+      letter-spacing: 0.08em;
+    }
+
+    .loader-quote {
+      font-size: 0.9rem;
+      font-style: italic;
+      color: var(--color-gold-light);
+      margin-top: 6px;
+      letter-spacing: 0.03em;
+    }
+
     /* Print CSS Override */
     @media print {
       body * {
@@ -1335,13 +1425,16 @@ import { Alert } from '../../utils/alert.utils';
     }
   `]
 })
-export class TrackOrderComponent implements OnInit {
+export class TrackOrderComponent implements OnInit, OnDestroy {
   showBalanceModal = signal(false);
   showInvoiceModal = signal(false);
   selectedOrderForPayment: any = null;
   selectedInvoiceOrder: any = null;
   utrNumber: string = '';
   isProcessing = signal(false);
+  private refreshInterval: any;
+
+  isLoading = signal<boolean>(true);
 
   constructor(
     public authService: AuthService,
@@ -1354,7 +1447,24 @@ export class TrackOrderComponent implements OnInit {
       this.router.navigate(['/auth']);
       return;
     }
-    this.ecommerceService.fetchOrders().subscribe();
+    this.isLoading.set(true);
+    this.ecommerceService.fetchOrders().subscribe({
+      next: () => this.isLoading.set(false),
+      error: () => this.isLoading.set(false)
+    });
+
+    // Auto-refresh order data quietly every 10 seconds
+    this.refreshInterval = setInterval(() => {
+      if (this.authService.isLoggedIn()) {
+        this.ecommerceService.fetchOrders().subscribe();
+      }
+    }, 10000);
+  }
+
+  ngOnDestroy() {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+    }
   }
 
   getDisplayOrders() {

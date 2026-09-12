@@ -22,7 +22,7 @@ import { Alert } from '../../utils/alert.utils';
               <span>BUY 1 GET 1 FREE</span>
             </div>
 
-            <img [src]="selectedImage()" [alt]="product()?.name" />
+            <img [src]="selectedImage()" (error)="onImageError($event)" [alt]="product()?.name" />
           </div>
           <div class="thumbnails-grid" *ngIf="product()?.images && product()!.images.length > 1">
             <button 
@@ -31,7 +31,7 @@ import { Alert } from '../../utils/alert.utils';
               [class.active]="selectedImage() === img"
               class="thumb-btn"
             >
-              <img [src]="img" alt="Thumbnail" />
+              <img [src]="img" (error)="onImageError($event)" alt="Thumbnail" />
             </button>
           </div>
         </div>
@@ -642,8 +642,37 @@ import { Alert } from '../../utils/alert.utils';
     }
 
     @media (max-width: 900px) {
+      .product-detail-page {
+        padding: 20px 14px 60px;
+      }
       .detail-container {
         grid-template-columns: 1fr;
+        gap: 24px;
+      }
+      .main-image-wrap {
+        height: 360px;
+      }
+      .product-title {
+        font-size: 1.6rem;
+      }
+      .current-price {
+        font-size: 1.5rem;
+      }
+      .action-buttons {
+        flex-direction: column;
+        width: 100%;
+        gap: 12px;
+      }
+      .action-buttons button, .action-buttons a {
+        width: 100%;
+      }
+      .advance-breakdown-box {
+        flex-direction: column;
+        gap: 12px;
+      }
+      .breakdown-divider {
+        width: 60%;
+        height: 1px;
       }
     }
   `]
@@ -653,6 +682,13 @@ export class ProductDetailComponent implements OnInit {
   selectedImage = signal<string>('');
   selectedSize = signal<string>('');
   quantity = signal<number>(1);
+
+  onImageError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    if (img && !img.src.includes('jhulki_brand_logo')) {
+      img.src = '/images/cat-women-chaniya-choli.jpg';
+    }
+  }
 
   constructor(
     private route: ActivatedRoute,

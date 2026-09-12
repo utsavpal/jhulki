@@ -94,7 +94,7 @@ import { Alert } from '../../utils/alert.utils';
                 <span>BUY 1 GET 1 FREE</span>
               </div>
 
-              <img [src]="product.images[0]" [alt]="product.name" />
+              <img [src]="product.images?.[0] || '/images/cat-women-chaniya-choli.jpg'" (error)="onImageError($event)" [alt]="product.name" />
               <button 
                 class="wishlist-btn" 
                 (click)="toggleWishlist($event, product.id)"
@@ -452,7 +452,84 @@ import { Alert } from '../../utils/alert.utils';
     }
 
     @media (max-width: 768px) {
-      .hero-title { font-size: 2.2rem; }
+      .hero-section {
+        padding: 60px 16px 40px;
+        min-height: auto;
+      }
+      .hero-title {
+        font-size: 1.8rem;
+        line-height: 1.25;
+      }
+      .hero-subtitle {
+        font-size: 0.85rem;
+      }
+      .hero-actions {
+        flex-direction: column;
+        width: 100%;
+        gap: 12px;
+      }
+      .hero-actions a {
+        width: 100%;
+      }
+      .categories-container {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .category-card {
+        height: 220px;
+      }
+      .card-overlay {
+        padding: 20px;
+      }
+      .cat-title {
+        font-size: 1.4rem;
+      }
+      .featured-products-section {
+        margin: 24px auto 60px;
+        padding: 0 12px;
+      }
+      .products-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .product-card {
+        min-width: 0;
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+      .product-image-wrap {
+        height: 200px;
+        width: 100%;
+      }
+      .product-info {
+        padding: 8px 6px;
+        min-width: 0;
+      }
+      .product-name {
+        font-size: 0.82rem;
+        line-height: 1.25;
+        margin: 3px 0 6px;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .current-price {
+        font-size: 0.95rem;
+      }
+      .view-details-btn {
+        width: 100%;
+        padding: 6px 2px;
+        font-size: 0.62rem;
+        letter-spacing: 0.08em;
+        text-align: center;
+        box-sizing: border-box;
+      }
     }
   `]
 })
@@ -470,6 +547,13 @@ export class HomeComponent implements OnInit {
       this.allProductsList.set(products);
       this.featuredProducts.set(products.slice(0, 4));
     });
+  }
+
+  onImageError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    if (img && !img.src.includes('jhulki_brand_logo')) {
+      img.src = '/images/cat-women-chaniya-choli.jpg';
+    }
   }
 
   hasActiveBogoOffers(): boolean {

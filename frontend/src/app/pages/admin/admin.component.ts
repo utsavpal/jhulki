@@ -83,7 +83,7 @@ import { Alert } from '../../utils/alert.utils';
             <tbody>
               <tr *ngFor="let product of products()">
                 <td class="product-cell">
-                  <img [src]="product.images[0]" [alt]="product.name" class="table-img" />
+                  <img [src]="product.images?.[0] || '/images/cat-women-chaniya-choli.jpg'" (error)="onImageError($event)" [alt]="product.name" class="table-img" />
                   <div>
                     <span class="p-name font-serif">{{ product.name }}</span>
                     <span class="p-slug">{{ product.slug }}</span>
@@ -254,7 +254,7 @@ import { Alert } from '../../utils/alert.utils';
 
           <div class="bogo-products-list mt-4">
             <div *ngFor="let p of products()" class="bogo-item-row glass-card">
-              <img [src]="p.images[0]" [alt]="p.name" class="bogo-item-img" />
+              <img [src]="p.images?.[0] || '/images/cat-women-chaniya-choli.jpg'" (error)="onImageError($event)" [alt]="p.name" class="bogo-item-img" />
               <div class="bogo-item-info">
                 <span class="p-name font-serif">{{ p.name }}</span>
                 <span class="gold-text font-serif">₹{{ p.price }}</span>
@@ -716,15 +716,49 @@ import { Alert } from '../../utils/alert.utils';
       gap: 10px;
     }
 
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 14px;
+    @media (max-width: 768px) {
+      .admin-page {
+        padding: 20px 12px 60px;
+      }
+      .admin-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+      }
+      .admin-header-actions {
+        flex-direction: column;
+        width: 100%;
+        gap: 12px;
+      }
+      .admin-header-actions button, .bogo-header-toggle-wrap {
+        width: 100%;
+      }
+      .stats-overview {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .table-wrap {
+        overflow-x: auto;
+      }
+      .modal-card {
+        padding: 20px 14px;
+        max-width: 95vw;
+      }
+      .form-row {
+        grid-template-columns: 1fr;
+      }
     }
   `]
 })
 export class AdminComponent implements OnInit {
   products = signal<Product[]>([]);
+
+  onImageError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    if (img && !img.src.includes('jhulki_brand_logo')) {
+      img.src = '/images/cat-women-chaniya-choli.jpg';
+    }
+  }
   metrics = signal<any>(null);
   showModal = signal(false);
   showBogoModal = signal(false);

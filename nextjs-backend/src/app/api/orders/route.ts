@@ -56,10 +56,13 @@ export async function POST(req: NextRequest) {
       };
     });
 
-    // Use passed totalAmount (final discounted amount like 4699 after BOGO/Sales)
+    // Check if user selected 100% full payment
+    const isFullPayment = paymentMethod && (paymentMethod.includes('100% Full Payment') || paymentMethod.includes('Full Payment'));
+
     const parsedTotal = (totalAmount && parseFloat(totalAmount) > 0) ? parseFloat(totalAmount) : computedTotal;
-    const advancePaid = Math.round(parsedTotal * 0.20);
-    const balanceDue = parsedTotal - advancePaid;
+    const advancePaid = isFullPayment ? parsedTotal : Math.round(parsedTotal * 0.20);
+    const balanceDue = isFullPayment ? 0 : parsedTotal - advancePaid;
+    const isBalancePaid = isFullPayment;
 
     const order = await prisma.order.create({
       data: {
@@ -68,6 +71,7 @@ export async function POST(req: NextRequest) {
         totalAmount: parsedTotal,
         advancePaid,
         balanceDue,
+        isBalancePaid,
         shippingName: shippingAddress.fullName,
         shippingStreet: shippingAddress.street,
         shippingCity: shippingAddress.city,

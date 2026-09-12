@@ -1,4 +1,4 @@
-import { Component, signal, OnInit } from '@angular/core';
+import { Component, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router } from '@angular/router';
@@ -45,13 +45,24 @@ import { Alert } from '../../utils/alert.utils';
         </div>
       </div>
 
+      <!-- Luxury Loading State -->
+      <div *ngIf="isLoading()" class="luxury-loader-card glass-card mt-4">
+        <div class="luxury-spinner">
+          <div class="spinner-ring ring-outer"></div>
+          <div class="spinner-ring ring-inner"></div>
+          <div class="brand-sparkle">✨</div>
+        </div>
+        <h3 class="font-serif loader-headline mt-4">Loading Admin Logistics Dashboard...</h3>
+        <p class="loader-quote">"Crafting extraordinary elegance for extraordinary moments."</p>
+      </div>
+
       <!-- Orders List Container -->
-      <div class="orders-container mt-4">
+      <div class="orders-container mt-4" *ngIf="!isLoading()">
         <div *ngFor="let order of filteredOrders()" class="order-admin-card glass-card">
           <!-- Order Card Top Bar -->
           <div class="order-top-bar">
             <div class="order-meta">
-              <span class="order-no font-serif">{{ order.orderNumber }}</span>
+              <span class="order-no">{{ order.orderNumber }}</span>
               <span class="order-date">{{ order.createdAt | date:'mediumDate' }}</span>
               <span class="status-chip" [class.shipped]="order.status === 'SHIPPED'" [class.delivered]="order.status === 'DELIVERED'">
                 {{ order.status }}
@@ -89,10 +100,13 @@ import { Alert } from '../../utils/alert.utils';
             <h4 class="items-title font-serif">Order Items ({{ order.items.length }})</h4>
             <div class="items-grid">
               <div *ngFor="let item of order.items" class="order-item-card">
-                <img [src]="item.product.images[0]" [alt]="item.product.name" class="item-img" />
+                <img [src]="item.product?.images?.[0] || '/images/cat-women-chaniya-choli.jpg'" (error)="onImageError($event)" [alt]="item.product?.name" class="item-img" />
                 <div class="item-details">
-                  <span class="item-name font-serif">{{ item.product.name }}</span>
-                  <div class="item-specs">
+                  <span class="item-name font-serif" style="letter-spacing: 0.08em; font-weight: 700; color: #d4af37;">
+                    PRODUCT ID: {{ item.product?.customCode || item.product?.id || 'JHK-ITEM' }}
+                  </span>
+                  <span style="font-size: 0.72rem; color: #888; display: block; margin-top: 2px;">({{ item.product?.name }})</span>
+                  <div class="item-specs mt-1">
                     <span class="spec-tag">SIZE: {{ item.size }}</span>
                     <span class="spec-tag">QTY: {{ item.quantity }}</span>
                   </div>
@@ -104,9 +118,9 @@ import { Alert } from '../../utils/alert.utils';
 
           <!-- Advance Payment & Balance Due Strip -->
           <div class="advance-payment-strip mt-3">
-            <span class="pay-tag advance">20% ADVANCE PAID: ₹{{ getAdvancePaid(order) | number:'1.2-2' }}</span>
+            <span class="pay-tag advance" *ngIf="!order.isBalancePaid">20% ADVANCE PAID: ₹{{ getAdvancePaid(order) | number:'1.2-2' }}</span>
             <span class="pay-tag balance" [class.paid]="order.isBalancePaid">
-              {{ order.isBalancePaid ? '✓ 80% BALANCE PAID (FULL)' : ('⏳ 80% BALANCE DUE: ₹' + (getBalanceDue(order) | number:'1.2-2')) }}
+              {{ order.isBalancePaid ? '✓ 100% FULL PAYMENT RECEIVED' : ('⏳ 80% BALANCE DUE: ₹' + (getBalanceDue(order) | number:'1.2-2')) }}
             </span>
             <button *ngIf="order.isBalancePaid" (click)="openInvoiceModal(order)" class="admin-invoice-btn" title="View & Print Client Tax Invoice">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -268,7 +282,10 @@ import { Alert } from '../../utils/alert.utils';
                 <tr *ngFor="let item of selectedInvoiceOrder.items; let i = index">
                   <td class="text-center">{{ i + 1 }}</td>
                   <td>
-                    <strong class="item-title-text">{{ item.product?.name || 'Jhulki Haute Couture Item' }}</strong>
+                    <strong class="item-title-text" style="color: #000; font-family: monospace; font-size: 0.9rem;">
+                      {{ item.product?.customCode || item.product?.id }}
+                    </strong>
+                    <span style="display: block; font-size: 0.75rem; color: #555;">{{ item.product?.name }}</span>
                   </td>
                   <td class="text-center">{{ item.size }}</td>
                   <td class="text-center">{{ item.quantity }}</td>
@@ -438,9 +455,11 @@ import { Alert } from '../../utils/alert.utils';
     }
 
     .order-no {
-      font-size: 1.3rem;
+      font-size: 1.25rem;
       color: var(--color-gold-light);
-      font-weight: 600;
+      font-weight: 700;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      letter-spacing: 0.05em;
     }
 
     .order-date {
@@ -751,6 +770,8 @@ import { Alert } from '../../utils/alert.utils';
         flex-direction: column;
         align-items: stretch;
       }
+    }
+
     .admin-invoice-btn {
       background: rgba(52, 199, 89, 0.15);
       border: 1px solid rgba(52, 199, 89, 0.4);
@@ -772,14 +793,99 @@ import { Alert } from '../../utils/alert.utils';
       background: rgba(52, 199, 89, 0.3);
       color: #fff;
     }
+
+    .luxury-loader-card {
+      text-align: center;
+      padding: 70px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(10, 10, 14, 0.45);
+      border: 1px solid rgba(212, 175, 55, 0.2);
+    }
+
+    .luxury-spinner {
+      position: relative;
+      width: 70px;
+      height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .spinner-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 2px solid transparent;
+    }
+
+    .ring-outer {
+      width: 66px;
+      height: 66px;
+      border-top-color: var(--color-gold-primary);
+      border-bottom-color: var(--color-gold-primary);
+      animation: spin 1.8s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+    }
+
+    .ring-inner {
+      width: 44px;
+      height: 44px;
+      border-left-color: #f3e5ab;
+      border-right-color: #f3e5ab;
+      animation: spin-reverse 1.2s linear infinite;
+    }
+
+    .brand-sparkle {
+      font-size: 1.3rem;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes spin-reverse {
+      0% { transform: rotate(360deg); }
+      100% { transform: rotate(0deg); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; transform: scale(0.9); }
+      50% { opacity: 1; transform: scale(1.15); }
+    }
+
+    .loader-headline {
+      font-size: 1.3rem;
+      color: #fff;
+      letter-spacing: 0.08em;
+    }
+
+    .loader-quote {
+      font-size: 0.9rem;
+      font-style: italic;
+      color: var(--color-gold-light);
+      margin-top: 6px;
+      letter-spacing: 0.03em;
+    }
   `]
 })
-export class AdminOrdersComponent implements OnInit {
+export class AdminOrdersComponent implements OnInit, OnDestroy {
   orders = signal<any[]>([]);
   filteredOrders = signal<any[]>([]);
+  statusFilter = 'ALL';
   searchQuery = '';
   showInvoiceModal = signal(false);
   selectedInvoiceOrder: any = null;
+  private refreshInterval: any;
+
+  onImageError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    if (img && !img.src.includes('jhulki_brand_logo')) {
+      img.src = '/images/cat-women-chaniya-choli.jpg';
+    }
+  }
 
   constructor(
     private ecommerceService: EcommerceService,
@@ -793,7 +899,22 @@ export class AdminOrdersComponent implements OnInit {
       return;
     }
     this.loadOrders();
+
+    // Auto-refresh admin order list quietly every 10 seconds without re-rendering whole page
+    this.refreshInterval = setInterval(() => {
+      if (this.authService.isAdmin()) {
+        this.loadOrders();
+      }
+    }, 10000);
   }
+
+  ngOnDestroy() {
+    if (this.refreshInterval) {
+      clearInterval(this.refreshInterval);
+    }
+  }
+
+  isLoading = signal<boolean>(true);
 
   loadOrders() {
     this.ecommerceService.fetchAllOrders().subscribe({
@@ -801,10 +922,12 @@ export class AdminOrdersComponent implements OnInit {
         const list = this.applyLocalOverrides(data || []);
         this.orders.set(list);
         this.filteredOrders.set(list);
+        this.isLoading.set(false);
       },
       error: () => {
         this.orders.set([]);
         this.filteredOrders.set([]);
+        this.isLoading.set(false);
       }
     });
   }

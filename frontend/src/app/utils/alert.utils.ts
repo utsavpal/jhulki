@@ -68,4 +68,26 @@ export class Alert {
       cancelButtonText: 'CANCEL'
     }).then(result => result.isConfirmed);
   }
+
+  static prompt(title: string, inputPlaceholder: string = 'Type address type...'): Promise<string | null> {
+    return luxurySwal.fire({
+      title: title,
+      input: 'text',
+      inputPlaceholder: inputPlaceholder,
+      showCancelButton: true,
+      confirmButtonText: 'SAVE TYPE',
+      cancelButtonText: 'CANCEL',
+      inputValidator: (value) => {
+        if (!value || !value.trim()) {
+          return 'Please enter a valid address type';
+        }
+        return null;
+      }
+    }).then(result => {
+      if (result.isConfirmed && result.value) {
+        return result.value.trim();
+      }
+      return null;
+    });
+  }
 }

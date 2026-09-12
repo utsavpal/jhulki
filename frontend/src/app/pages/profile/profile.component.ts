@@ -24,7 +24,6 @@ import { Alert } from '../../utils/alert.utils';
           </button>
         </div>
         <h1 class="font-serif page-title">Welcome, {{ profileData.fullName || user()?.fullName }}</h1>
-        <p class="role-badge">{{ user()?.role }} ACCOUNT • {{ user()?.email }}</p>
       </div>
 
       <div class="profile-layout mt-5">
@@ -38,7 +37,7 @@ import { Alert } from '../../utils/alert.utils';
           <form (ngSubmit)="saveProfile()" class="profile-form mt-4">
             <div class="form-row">
               <div class="form-group">
-                <label>Full Name</label>
+                <label>Full Name *</label>
                 <input type="text" [(ngModel)]="profileData.fullName" name="fullName" placeholder="Enter your full name" required />
               </div>
               <div class="form-group">
@@ -49,18 +48,18 @@ import { Alert } from '../../utils/alert.utils';
 
             <div class="form-row mt-4">
               <div class="form-group">
-                <label>Contact Phone Number</label>
-                <input type="tel" [(ngModel)]="profileData.phone" name="phone" placeholder="+91 98201 99881" />
+                <label>Contact Phone Number *</label>
+                <input type="tel" [(ngModel)]="profileData.phone" name="phone" placeholder="+91 98201 99881" required />
               </div>
               <div class="form-group">
-                <label>Postal / Pin Code</label>
-                <input type="text" [(ngModel)]="profileData.postalCode" name="postalCode" placeholder="e.g. 400021" />
+                <label>Postal / Pin Code *</label>
+                <input type="text" [(ngModel)]="profileData.postalCode" name="postalCode" placeholder="e.g. 400021" required />
               </div>
             </div>
 
             <div class="form-group mt-4">
-              <label>Street Address</label>
-              <input type="text" [(ngModel)]="profileData.address" name="address" placeholder="Flat / Building / Street Address" />
+              <label>Street Address *</label>
+              <input type="text" [(ngModel)]="profileData.address" name="address" placeholder="Flat / Building / Street Address" required />
             </div>
 
             <!-- Map Location Section -->
@@ -124,7 +123,7 @@ import { Alert } from '../../utils/alert.utils';
         <div class="section-card glass-card">
           <div class="section-header">
             <h2 class="font-serif">Shipping Addresses</h2>
-            <button (click)="showAddressModal.set(true)" class="luxury-btn-outline add-btn">
+            <button (click)="openAddAddressModal()" class="luxury-btn-outline add-btn">
               + ADD NEW ADDRESS
             </button>
           </div>
@@ -158,43 +157,50 @@ import { Alert } from '../../utils/alert.utils';
           <form (ngSubmit)="saveAddress()" class="modal-form mt-4">
             <div class="form-row">
               <div class="form-group">
-                <label>Address Title (e.g. Home, Work)</label>
-                <input type="text" [(ngModel)]="newAddress.title" name="title" required />
+                <label>Address Type *</label>
+                <select [ngModel]="selectedAddressType" (ngModelChange)="onAddressTypeChange($event)" name="addressTypeSelect" required class="select-input">
+                  <option value="Home">Home</option>
+                  <option value="Office">Office</option>
+                  <option value="Other">Other</option>
+                </select>
+                <span class="custom-type-indicator mt-1" *ngIf="customAddressTitle">
+                  Custom Label: <strong class="gold-text">{{ newAddress.title }}</strong>
+                </span>
               </div>
               <div class="form-group">
-                <label>Full Recipient Name</label>
+                <label>Full Recipient Name *</label>
                 <input type="text" [(ngModel)]="newAddress.fullName" name="fullName" required />
               </div>
             </div>
 
-            <div class="form-group mt-3">
-              <label>Street Address</label>
-              <input type="text" [(ngModel)]="newAddress.street" name="street" required />
+            <div class="form-group mt-4">
+              <label>Street Address *</label>
+              <input type="text" [(ngModel)]="newAddress.street" name="street" maxlength="254" required />
             </div>
 
-            <div class="form-row mt-3">
+            <div class="form-row mt-4">
               <div class="form-group">
-                <label>City</label>
+                <label>City *</label>
                 <input type="text" [(ngModel)]="newAddress.city" name="city" required />
               </div>
               <div class="form-group">
-                <label>State / Province</label>
+                <label>State / Province *</label>
                 <input type="text" [(ngModel)]="newAddress.state" name="state" required />
               </div>
             </div>
 
-            <div class="form-row mt-3">
+            <div class="form-row mt-4">
               <div class="form-group">
-                <label>Postal / Zip Code</label>
+                <label>Postal / Zip Code *</label>
                 <input type="text" [(ngModel)]="newAddress.postalCode" name="postalCode" required />
               </div>
               <div class="form-group">
-                <label>Phone Number</label>
+                <label>Phone Number *</label>
                 <input type="text" [(ngModel)]="newAddress.phone" name="phone" required />
               </div>
             </div>
 
-            <div class="form-group mt-3 checkbox-group">
+            <div class="checkbox-group mt-4">
               <input type="checkbox" id="isDefault" [(ngModel)]="newAddress.isDefault" name="isDefault" />
               <label for="isDefault">Set as default shipping address</label>
             </div>
@@ -311,7 +317,7 @@ import { Alert } from '../../utils/alert.utils';
       text-transform: uppercase;
     }
 
-    .form-group input {
+    .form-group input, .form-group select {
       background: rgba(0, 0, 0, 0.4);
       border: 1px solid rgba(212, 175, 55, 0.2);
       color: #fff;
@@ -320,6 +326,11 @@ import { Alert } from '../../utils/alert.utils';
       font-size: 0.95rem;
       outline: none;
       transition: all 0.3s ease;
+    }
+
+    .custom-type-indicator {
+      font-size: 0.72rem;
+      color: var(--color-gold-light);
     }
 
     .form-group input:focus {
@@ -459,9 +470,41 @@ import { Alert } from '../../utils/alert.utils';
     }
 
     .modal-card {
+      width: 92vw;
+      max-width: 480px;
+      background: rgba(10, 10, 14, 0.55);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1px solid rgba(212, 175, 55, 0.35);
+      border-radius: 8px;
+      padding: 22px 24px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85);
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    .modal-form {
       width: 100%;
-      max-width: 540px;
-      padding: 30px;
+      box-sizing: border-box;
+      margin-top: 16px;
+    }
+
+    .modal-form .form-row {
+      gap: 14px;
+      margin-top: 18px !important;
+    }
+
+    .modal-form .form-group {
+      min-width: 0;
+    }
+
+    .modal-form > .form-group {
+      margin-top: 18px !important;
+    }
+
+    .modal-form .form-group input {
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .modal-header {
@@ -479,21 +522,76 @@ import { Alert } from '../../utils/alert.utils';
     }
 
     .checkbox-group {
+      display: flex !important;
       flex-direction: row !important;
-      align-items: center;
-      gap: 10px;
+      align-items: center !important;
+      gap: 8px !important;
+      white-space: nowrap !important;
+      margin-top: 20px !important;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      margin: 0 !important;
+      cursor: pointer;
     }
 
     .checkbox-group label {
       margin-bottom: 0 !important;
       text-transform: none !important;
+      font-size: 0.82rem !important;
+      color: #ccc !important;
       cursor: pointer;
+      white-space: nowrap !important;
     }
 
     .modal-actions {
       display: flex;
       justify-content: flex-end;
       gap: 12px;
+      margin-top: 28px !important;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 16px;
+    }
+
+    @media (max-width: 768px) {
+      .profile-page {
+        padding: 20px 12px 60px;
+      }
+      .page-title {
+        font-size: 1.6rem;
+      }
+      .section-card {
+        padding: 16px 14px;
+      }
+      .section-header {
+        flex-direction: column;
+        gap: 6px;
+      }
+      .form-row {
+        flex-direction: column;
+        gap: 12px;
+      }
+      .form-group input {
+        padding: 10px 12px;
+        font-size: 0.85rem;
+      }
+      .location-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
+      .get-loc-btn {
+        width: 100%;
+        text-align: center;
+      }
+      .save-profile-btn, .update-pass-btn {
+        width: 100%;
+        text-align: center;
+      }
+      .modal-card {
+        padding: 20px 14px;
+        max-width: 94vw;
+      }
     }
   `]
 })
@@ -501,6 +599,35 @@ export class ProfileComponent implements OnInit {
   user = signal<User | null>(null);
   showAddressModal = signal<boolean>(false);
   locating = signal<boolean>(false);
+
+  selectedAddressType: string = 'Home';
+  customAddressTitle: boolean = false;
+
+  openAddAddressModal() {
+    this.selectedAddressType = 'Home';
+    this.newAddress.title = 'Home';
+    this.customAddressTitle = false;
+    this.showAddressModal.set(true);
+  }
+
+  onAddressTypeChange(type: string) {
+    this.selectedAddressType = type;
+    if (type === 'Other') {
+      Alert.prompt('Specify Custom Address Type', 'e.g. Studio, Farmhouse, Vacation Home').then(customType => {
+        if (customType) {
+          this.newAddress.title = customType;
+          this.customAddressTitle = true;
+        } else {
+          this.selectedAddressType = 'Home';
+          this.newAddress.title = 'Home';
+          this.customAddressTitle = false;
+        }
+      });
+    } else {
+      this.newAddress.title = type;
+      this.customAddressTitle = false;
+    }
+  }
 
   profileData = {
     fullName: '',
@@ -588,6 +715,11 @@ export class ProfileComponent implements OnInit {
   saveProfile() {
     const u = this.user();
     if (!u) return;
+
+    if (!this.profileData.fullName?.trim() || !this.profileData.phone?.trim() || !this.profileData.address?.trim() || !this.profileData.postalCode?.trim()) {
+      Alert.warning('Required Fields Missing', 'Full Name, Contact Phone Number, Street Address, and Postal Code are mandatory fields.');
+      return;
+    }
 
     localStorage.setItem(`jhulki_profile_${u.id}`, JSON.stringify(this.profileData));
     if (this.profileData.fullName) {

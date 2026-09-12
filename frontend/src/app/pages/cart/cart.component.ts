@@ -22,14 +22,14 @@ import { Alert } from '../../utils/alert.utils';
         <!-- Cart Items List -->
         <div class="items-list">
           <div *ngFor="let item of ecommerceService.cartItems()" class="cart-item-card glass-card">
-            <img [src]="item.product.images[0]" [alt]="item.product.name" class="item-img" />
+            <img [src]="item.product.images?.[0] || '/images/cat-women-chaniya-choli.jpg'" (error)="onImageError($event)" [alt]="item.product.name" class="item-img" />
             <div class="item-details">
               <span class="category">{{ item.product.category?.name }}</span>
               <h3 class="name font-serif">{{ item.product.name }}</h3>
               <p class="size-info">Selected Size: <strong>{{ item.size }}</strong></p>
               <div class="price">
                 ₹{{ ecommerceService.getEffectivePrice(item.product) }}
-                <span *ngIf="item.product.isBogoEnabled" class="bogo-chip ml-2">BOGO ELIGIBLE</span>
+                <span *ngIf="item.product.isBogoEnabled" class="bogo-chip ml-2">B1G1</span>
               </div>
             </div>
 
@@ -456,13 +456,15 @@ import { Alert } from '../../utils/alert.utils';
     }
 
     .qr-modal-card {
-      width: 92% !important;
-      max-width: 520px !important;
-      background: #121216 !important;
+      width: 90% !important;
+      max-width: 440px !important;
+      background: rgba(10, 10, 14, 0.55) !important;
+      backdrop-filter: blur(25px) !important;
+      -webkit-backdrop-filter: blur(25px) !important;
       border: 1px solid rgba(212, 175, 55, 0.35) !important;
       border-radius: 8px !important;
-      padding: 28px !important;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(212, 175, 55, 0.15) !important;
+      padding: 20px 22px !important;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85), 0 0 25px rgba(212, 175, 55, 0.15) !important;
       position: relative !important;
       z-index: 1001 !important;
       animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -534,9 +536,37 @@ import { Alert } from '../../utils/alert.utils';
 
     .upi-id-tag { font-size: 0.85rem; color: #ddd; }
     .amount-tag { font-size: 0.95rem; color: #fff; }
-    .scan-note { font-size: 0.75rem; color: #888; line-height: 1.3; margin-top: 4px; }
-
-    .help-text { font-size: 0.7rem; color: #888; margin-top: 4px; display: block; }
+    @media (max-width: 900px) {
+      .cart-page {
+        padding: 20px 12px 60px;
+      }
+      .page-title {
+        font-size: 1.8rem;
+      }
+      .cart-layout {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+      .cart-item-card {
+        padding: 14px;
+        gap: 14px;
+      }
+      .item-img {
+        width: 80px;
+        height: 100px;
+      }
+      .name {
+        font-size: 1rem;
+      }
+      .qr-modal-content {
+        width: 92vw;
+        padding: 20px 16px;
+      }
+      .qr-code-box {
+        flex-direction: column;
+        text-align: center;
+      }
+    }
   `]
 })
 export class CartComponent implements OnInit {
@@ -546,6 +576,13 @@ export class CartComponent implements OnInit {
   showPaymentModal = signal(false);
   paymentScheme: '20_PERCENT' | 'FULL' = '20_PERCENT';
   utrNumber: string = '';
+
+  onImageError(event: Event) {
+    const img = event.target as HTMLImageElement;
+    if (img && !img.src.includes('jhulki_brand_logo')) {
+      img.src = '/images/cat-women-chaniya-choli.jpg';
+    }
+  }
 
   constructor(
     public ecommerceService: EcommerceService,

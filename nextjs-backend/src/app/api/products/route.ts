@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { corsHeaders, handleCors } from '@/lib/cors';
+import { getCategoryPrefix, generateCustomProductCode } from '@/lib/custom-id';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +19,20 @@ export async function GET(req: NextRequest) {
 
     const where: any = {};
     if (categorySlug && categorySlug !== 'all') {
-      where.category = { slug: categorySlug };
+      const slugLower = categorySlug.toLowerCase();
+      if (slugLower === 'women') {
+        // Include Women, Chaniya Choli, Blouse
+        where.category = {
+          slug: { in: ['women', 'chaniya-choli', 'blouse'] }
+        };
+      } else if (slugLower === 'men') {
+        // Include Men and Kurta
+        where.category = {
+          slug: { in: ['men', 'kurta'] }
+        };
+      } else {
+        where.category = { slug: categorySlug };
+      }
     }
     if (featured === 'true') {
       where.isFeatured = true;
@@ -80,8 +94,15 @@ export async function POST(req: NextRequest) {
 
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Date.now().toString().slice(-4);
 
+    const prefix = getCategoryPrefix(category.slug || category.name);
+    const existingCount = await prisma.product.count({
+      where: { categoryId: category.id }
+    });
+    const customCode = generateCustomProductCode(prefix, new Date(), existingCount + 1);
+
     const product = await prisma.product.create({
       data: {
+        customCode,
         name,
         slug,
         description,

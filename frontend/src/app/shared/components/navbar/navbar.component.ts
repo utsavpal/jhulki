@@ -194,11 +194,51 @@ import { EcommerceService } from '../../../services/ecommerce.service';
         <div class="sidebar-group" *ngIf="!authService.isAdmin()">
           <label>COLLECTIONS</label>
           <a routerLink="/products" [queryParams]="{category: 'all'}" (click)="toggleSidebar()">All Haute Couture</a>
-          <a routerLink="/products" [queryParams]="{category: 'men'}" (click)="toggleSidebar()">Men's Atelier</a>
-          <a routerLink="/products" [queryParams]="{category: 'women'}" (click)="toggleSidebar()">Women's Runway</a>
+          
+          <!-- MEN Accordion -->
+          <div class="sidebar-accordion-item">
+            <div class="accordion-header" (click)="toggleMen()">
+              <span>Men's Atelier</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [style.transform]="expandedMen() ? 'rotate(180deg)' : 'rotate(0deg)'" style="transition: transform 0.25s ease;">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+            <div class="accordion-sub-menu" *ngIf="expandedMen()">
+              <a routerLink="/products" [queryParams]="{category: 'men'}" (click)="toggleSidebar()">All Men's Collection</a>
+              <a routerLink="/products" [queryParams]="{category: 'kurta'}" (click)="toggleSidebar()">Haute Kurta Sets</a>
+            </div>
+          </div>
+
+          <!-- WOMEN Accordion -->
+          <div class="sidebar-accordion-item">
+            <div class="accordion-header" (click)="toggleWomen()">
+              <span>Women's Runway</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [style.transform]="expandedWomen() ? 'rotate(180deg)' : 'rotate(0deg)'" style="transition: transform 0.25s ease;">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+            <div class="accordion-sub-menu" *ngIf="expandedWomen()">
+              <a routerLink="/products" [queryParams]="{category: 'women'}" (click)="toggleSidebar()">All Women's Collection</a>
+              <a routerLink="/products" [queryParams]="{category: 'chaniya-choli'}" (click)="toggleSidebar()">Royal Chaniya Choli</a>
+              <a routerLink="/products" [queryParams]="{category: 'blouse'}" (click)="toggleSidebar()">Blouse & Corsets</a>
+            </div>
+          </div>
+
           <a routerLink="/products" [queryParams]="{category: 'accessories'}" (click)="toggleSidebar()">Fine Accessories</a>
-          <a routerLink="/products" [queryParams]="{category: 'kids'}" (click)="toggleSidebar()">Kids' Atelier</a>
-          <a routerLink="/products" [queryParams]="{category: 'couple'}" (click)="toggleSidebar()">Couple Sets</a>
+
+          <!-- MORE Accordion -->
+          <div class="sidebar-accordion-item">
+            <div class="accordion-header" (click)="toggleMore()">
+              <span>More Collections</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [style.transform]="expandedMore() ? 'rotate(180deg)' : 'rotate(0deg)'" style="transition: transform 0.25s ease;">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+            <div class="accordion-sub-menu" *ngIf="expandedMore()">
+              <a routerLink="/products" [queryParams]="{category: 'kids'}" (click)="toggleSidebar()">Kids' Atelier</a>
+              <a routerLink="/products" [queryParams]="{category: 'couple'}" (click)="toggleSidebar()">Couple Sets</a>
+            </div>
+          </div>
         </div>
 
         <div class="sidebar-group" *ngIf="authService.isAdmin()">
@@ -579,15 +619,59 @@ import { EcommerceService } from '../../../services/ecommerce.service';
       margin-top: 8px;
     }
 
+    .sidebar-accordion-item {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+    .accordion-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      color: #ccc;
+      font-size: 0.9rem;
+      cursor: pointer;
+      letter-spacing: 0.05em;
+    }
+    .accordion-header:hover {
+      color: var(--color-gold-primary);
+    }
+    .accordion-sub-menu {
+      padding-left: 12px;
+      display: flex;
+      flex-direction: column;
+      background: rgba(0, 0, 0, 0.25);
+      border-left: 2px solid var(--color-gold-primary);
+      margin: 4px 0 8px 4px;
+    }
+    .accordion-sub-menu a {
+      font-size: 0.82rem;
+      color: #aaa;
+      padding: 8px 12px;
+      border-bottom: none;
+    }
+    .accordion-sub-menu a:hover {
+      color: var(--color-gold-light);
+    }
+
     @media (max-width: 900px) {
       .desktop-nav { display: none; }
       .mobile-menu-btn { display: flex; }
+      .header-container { padding: 10px 14px; }
+      .logo-title { font-size: 1.25rem; letter-spacing: 0.22em; }
+      .logo-subtitle { font-size: 0.45rem; letter-spacing: 0.35em; }
+      .header-actions { gap: 10px; }
+      .search-box.expanded input { width: 100px; }
+      .luxury-sidebar { width: 290px; }
+      .luxury-topbar { font-size: 0.55rem; padding: 5px 8px; letter-spacing: 0.12em; }
     }
   `]
 })
 export class NavbarComponent {
   searchActive = signal(false);
   sidebarOpen = signal(false);
+  expandedMen = signal(false);
+  expandedWomen = signal(false);
+  expandedMore = signal(false);
   searchQuery = '';
 
   constructor(
@@ -599,6 +683,21 @@ export class NavbarComponent {
       this.ecommerceService.fetchCart().subscribe();
       this.ecommerceService.fetchWishlist().subscribe();
     }
+  }
+
+  toggleMen(event?: Event) {
+    if (event) event.stopPropagation();
+    this.expandedMen.update(v => !v);
+  }
+
+  toggleWomen(event?: Event) {
+    if (event) event.stopPropagation();
+    this.expandedWomen.update(v => !v);
+  }
+
+  toggleMore(event?: Event) {
+    if (event) event.stopPropagation();
+    this.expandedMore.update(v => !v);
   }
 
   toggleSearch() {
