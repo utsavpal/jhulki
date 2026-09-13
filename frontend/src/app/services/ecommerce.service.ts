@@ -53,18 +53,107 @@ export class EcommerceService {
     );
   }
 
+  private getGuestCart(): CartItem[] {
+    try {
+      const stored = localStorage.getItem('jhulki_guest_cart');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private saveGuestCart(items: CartItem[]): void {
+    try {
+      localStorage.setItem('jhulki_guest_cart', JSON.stringify(items));
+    } catch {}
+  }
+
   fetchCart(): Observable<CartItem[]> {
     const user = this.auth.getUser();
-    if (!user) return new Observable(obs => obs.next([]));
+    if (!user) {
+      const guestItems = this.getGuestCart();
+      this.cartItems.set(guestItems);
+      return of(guestItems);
+    }
+
+    // Sync any guest cart items to backend if user just logged in
+    const guestItems = this.getGuestCart();
+    if (guestItems.length > 0) {
+      localStorage.removeItem('jhulki_guest_cart');
+      // Fire-and-forget sync each item
+      guestItems.forEach(item => {
+        this.http.post(`${this.apiUrl}/cart`, {
+          userId: user.id,
+          productId: item.productId,
+          size: item.size,
+          quantity: item.quantity
+        }).subscribe();
+      });
+    }
+
     return this.http.get<CartItem[]>(`${this.apiUrl}/cart?userId=${user.id}`).pipe(
       tap(res => this.cartItems.set(res))
     );
   }
 
-  addToCart(productId: string, size: string, quantity: number = 1): Observable<CartItem> {
+  addToCart(productId: string, size: string, quantity: number = 1): Observable<any> {
+    const product = this.products().find(p => p.id === productId);
     const user = this.auth.getUser();
-    if (!user) throw new Error('User not logged in');
 
+    if (!user) {
+      // Guest User local fast optimistic update
+      let items = [...this.cartItems()];
+      const existingIndex = items.findIndex(i => i.productId === productId && i.size === size);
+
+      if (existingIndex > -1) {
+        const newQty = items[existingIndex].quantity + quantity;
+        if (newQty <= 0) {
+          items.splice(existingIndex, 1);
+        } else {
+          items[existingIndex] = { ...items[existingIndex], quantity: newQty };
+        }
+      } else if (quantity > 0) {
+        const newItem: CartItem = {
+          id: 'guest-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+          userId: 'guest',
+          productId,
+          product: product || ({ id: productId, name: 'Couture Item', price: 0, images: [] } as any),
+          size,
+          quantity
+        };
+        items.push(newItem);
+      }
+
+      this.cartItems.set(items);
+      this.saveGuestCart(items);
+      return of(items);
+    }
+
+    // Logged in User - Optimistic local signal update first for instant responsiveness
+    let items = [...this.cartItems()];
+    const existingIndex = items.findIndex(i => i.productId === productId && i.size === size);
+
+    if (existingIndex > -1) {
+      const newQty = items[existingIndex].quantity + quantity;
+      if (newQty <= 0) {
+        items.splice(existingIndex, 1);
+      } else {
+        items[existingIndex] = { ...items[existingIndex], quantity: newQty };
+      }
+    } else if (quantity > 0) {
+      const newItem: CartItem = {
+        id: 'temp-' + Date.now(),
+        userId: user.id,
+        productId,
+        product: product || ({ id: productId, name: 'Couture Item', price: 0, images: [] } as any),
+        size,
+        quantity
+      };
+      items.push(newItem);
+    }
+    this.cartItems.set(items);
+
+    // Backend sync in background
     return this.http.post<CartItem>(`${this.apiUrl}/cart`, {
       userId: user.id,
       productId,
@@ -76,6 +165,18 @@ export class EcommerceService {
   }
 
   removeFromCart(cartItemId: string): Observable<any> {
+    const user = this.auth.getUser();
+
+    if (!user) {
+      let items = this.cartItems().filter(i => i.id !== cartItemId);
+      this.cartItems.set(items);
+      this.saveGuestCart(items);
+      return of(items);
+    }
+
+    let items = this.cartItems().filter(i => i.id !== cartItemId);
+    this.cartItems.set(items);
+
     return this.http.delete(`${this.apiUrl}/cart?id=${cartItemId}`).pipe(
       tap(() => this.fetchCart().subscribe())
     );
@@ -176,18 +277,48 @@ export class EcommerceService {
     );
   }
 
+  registerGuestAndCreateAddress(guestData: { email: string; phone: string; fullName: string; street: string; city: string; state: string; postalCode: string }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/auth/guest-checkout`, guestData).pipe(
+      tap((res: any) => {
+        if (res.token && res.user) {
+          this.auth.setSession(res.token, res.user);
+        }
+      })
+    );
+  }
+
+  createRazorpayOrder(amountInPaise: number, receipt?: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/razorpay/create-order`, {
+      amount: amountInPaise,
+      currency: 'INR',
+      receipt
+    });
+  }
+
+  verifyRazorpayPayment(razorpay_order_id: string, razorpay_payment_id: string, razorpay_signature: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/razorpay/verify-payment`, {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature
+    });
+  }
+
   checkoutOrder(totalAmount: number, shippingAddress: Address, paymentMethod: string): Observable<Order> {
     const user = this.auth.getUser();
-    if (!user) throw new Error('User not logged in');
+    if (!user) throw new Error('User details are required for order placement');
+
+    const currentItems = [...this.cartItems()];
 
     return this.http.post<Order>(`${this.apiUrl}/orders`, {
       userId: user.id,
-      items: this.cartItems(),
+      items: currentItems,
       totalAmount,
       shippingAddress,
       paymentMethod
     }).pipe(
       tap(() => {
+        localStorage.removeItem('jhulki_guest_cart');
+        this.cartItems.set([]);
         this.fetchCart().subscribe();
         this.fetchOrders().subscribe();
       })

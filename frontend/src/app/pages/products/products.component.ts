@@ -92,18 +92,28 @@ import { Product } from '../../models/ecommerce.model';
                 VIEW DETAILS
               </a>
               <button 
-                *ngIf="getCartQuantity(product.id) === 0" 
-                (click)="quickAddToCart($event, product)" 
-                class="quick-add-cart-btn"
+                *ngIf="product.isOutOfStock" 
+                disabled
+                class="quick-add-cart-btn out-of-stock-btn"
+                style="background: #27272a; color: #888; border-color: #3f3f46; cursor: not-allowed;"
               >
-                + ADD TO CART
+                OUT OF STOCK
               </button>
+              <ng-container *ngIf="!product.isOutOfStock">
+                <button 
+                  *ngIf="getCartQuantity(product.id) === 0" 
+                  (click)="quickAddToCart($event, product)" 
+                  class="quick-add-cart-btn"
+                >
+                  + ADD TO CART
+                </button>
 
-              <div *ngIf="getCartQuantity(product.id) > 0" class="qty-spinner-btn" (click)="$event.stopPropagation()">
-                <button (click)="decreaseCartQty($event, product)" class="qty-btn">-</button>
-                <span class="qty-val">{{ getCartQuantity(product.id) }}</span>
-                <button (click)="increaseCartQty($event, product)" class="qty-btn">+</button>
-              </div>
+                <div *ngIf="getCartQuantity(product.id) > 0" class="qty-spinner-btn" (click)="$event.stopPropagation()">
+                  <button (click)="decreaseCartQty($event, product)" class="qty-btn">-</button>
+                  <span class="qty-val">{{ getCartQuantity(product.id) }}</span>
+                  <button (click)="increaseCartQty($event, product)" class="qty-btn">+</button>
+                </div>
+              </ng-container>
             </div>
           </div>
         </div>
@@ -714,21 +724,13 @@ export class ProductsComponent implements OnInit {
 
   quickAddToCart(event: MouseEvent, product: Product) {
     event.stopPropagation();
-    if (!this.authService.isLoggedIn()) {
-      Alert.info('Sign In Required', 'Please sign in to add items to your shopping bag.').then(() => {
-        this.router.navigate(['/auth']);
-      });
-      return;
-    }
 
     const availableSize = product.stock && product.stock.length > 0 
       ? (product.stock.find(s => s.quantity > 0)?.size || product.stock[0].size)
       : 'M';
 
     this.ecommerceService.addToCart(product.id, availableSize, 1).subscribe({
-      next: () => {
-        // Success silent update
-      },
+      next: () => {},
       error: (err) => Alert.error('Add Failed', err?.error?.error || 'Failed to add item to bag')
     });
   }

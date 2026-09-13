@@ -24,3 +24,8 @@
 *.njsproj
 *.sln
 *.sw?
+
+# credentials
+jhulki_credentials.txt
+rzp-key.csv
+*.csv

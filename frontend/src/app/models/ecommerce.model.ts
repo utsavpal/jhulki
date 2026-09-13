@@ -31,6 +31,7 @@ export interface Product {
   category?: Category;
   isFeatured: boolean;
   isNewArrival?: boolean;
+  isOutOfStock?: boolean;
   stock?: ProductStock[];
 }
 

@@ -102,7 +102,19 @@ import { Alert } from '../../utils/alert.utils';
 
           <!-- Add to Cart & Wishlist Actions -->
           <div class="action-buttons mt-5">
-            <button (click)="addToCart()" class="luxury-btn-primary add-cart-btn">
+            <button 
+              *ngIf="product()?.isOutOfStock" 
+              disabled
+              class="luxury-btn-primary add-cart-btn"
+              style="background: #27272a; color: #888; border-color: #3f3f46; cursor: not-allowed;"
+            >
+              OUT OF STOCK
+            </button>
+            <button 
+              *ngIf="!product()?.isOutOfStock" 
+              (click)="addToCart()" 
+              class="luxury-btn-primary add-cart-btn"
+            >
               ADD TO SHOPPING BAG
             </button>
 
@@ -760,12 +772,6 @@ export class ProductDetailComponent implements OnInit {
   addToCart() {
     const p = this.product();
     if (!p) return;
-    if (!this.authService.isLoggedIn()) {
-      Alert.info('Sign In Required', 'Please sign in to add items to your shopping bag.').then(() => {
-        this.router.navigate(['/auth']);
-      });
-      return;
-    }
 
     if (!this.selectedSize()) {
       Alert.warning('Select Size', 'Please select a size first.');

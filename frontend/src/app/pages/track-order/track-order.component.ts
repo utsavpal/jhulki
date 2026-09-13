@@ -46,6 +46,20 @@ import { Alert } from '../../utils/alert.utils';
               <span class="order-date">{{ order.createdAt | date:'mediumDate' }}</span>
             </div>
             <div class="header-right">
+              <a 
+                *ngIf="order.status === 'DELIVERED'" 
+                [routerLink]="['/returns-exchange']" 
+                [queryParams]="{ orderId: order.id }"
+                class="invoice-icon-btn return-exchange-btn" 
+                title="Initiate Easy Size Exchange or Return Pickup"
+                style="border-color: #d4af37; color: #d4af37; background: rgba(212, 175, 55, 0.1);"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                </svg>
+                <span>EXCHANGE / RETURN</span>
+              </a>
               <button *ngIf="order.isBalancePaid" (click)="openInvoiceModal(order)" class="invoice-icon-btn" title="View & Download Official Tax Invoice">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
