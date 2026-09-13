@@ -64,6 +64,7 @@ export async function PUT(
         ...(images && { images }),
         ...(isFeatured !== undefined && { isFeatured }),
         ...(isNewArrival !== undefined && { isNewArrival }),
+        ...(body.isOutOfStock !== undefined && { isOutOfStock: !!body.isOutOfStock }),
       },
       include: { category: true, stock: true },
     });

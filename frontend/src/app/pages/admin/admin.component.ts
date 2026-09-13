@@ -116,6 +116,14 @@ import { Alert } from '../../utils/alert.utils';
                 </td>
                 <td>
                   <div class="action-btns">
+                    <button 
+                      (click)="toggleOutOfStock(product)" 
+                      class="stock-toggle-btn"
+                      [class.off-active]="product.isOutOfStock"
+                      [title]="product.isOutOfStock ? 'Product is OFF (Out of Stock)' : 'Turn OFF Product Stock'"
+                    >
+                      {{ product.isOutOfStock ? '🔴 OFF' : '🟢 ON' }}
+                    </button>
                     <button (click)="openEditProductModal(product)" class="edit-btn" title="Edit Product">
                       ✎ Edit
                     </button>
@@ -839,6 +847,21 @@ export class AdminComponent implements OnInit {
         this.products.update(list => list.map(p => p.id === updated.id ? { ...p, isBogoEnabled: updated.isBogoEnabled } : p));
       },
       error: (err) => Alert.error('BOGO Update Failed', err?.error?.error || 'Failed to update BOGO status')
+    });
+  }
+
+  toggleOutOfStock(product: Product) {
+    const targetStatus = !product.isOutOfStock;
+    this.ecommerceService.updateProduct(product.id, { isOutOfStock: targetStatus }).subscribe({
+      next: (updated) => {
+        this.products.update(list => list.map(p => p.id === updated.id ? { ...p, isOutOfStock: updated.isOutOfStock } : p));
+        if (targetStatus) {
+          Alert.success('Product OFF', `${product.name} is now set to Out Of Stock.`);
+        } else {
+          Alert.success('Product ON', `${product.name} stock status is now Active.`);
+        }
+      },
+      error: (err) => Alert.error('Stock Update Failed', err?.error?.error || 'Failed to update stock status')
     });
   }
 

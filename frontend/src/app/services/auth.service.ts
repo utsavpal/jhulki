@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap, catchError, of } from 'rxjs';
 import { User } from '../models/ecommerce.model';
+import { environment } from '../../environments/environment';
 
 export function getApiUrl(): string {
   if (typeof window !== 'undefined') {
@@ -15,13 +16,8 @@ export function getApiUrl(): string {
         localStorage.removeItem('jhulki_api_url');
       }
     }
-
-    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-      // Point directly to live Next.js Vercel API backend
-      return 'https://jhulki-backend.vercel.app/api';
-    }
   }
-  return 'http://localhost:5292/api';
+  return environment.apiUrl;
 }
 
 export const API_URL = getApiUrl();
@@ -71,7 +67,7 @@ export class AuthService {
     );
   }
 
-  private setSession(token: string, user: User) {
+  setSession(token: string, user: User) {
     this.token.set(token);
     this.currentUser.set(user);
     localStorage.setItem('jhulki_token', token);

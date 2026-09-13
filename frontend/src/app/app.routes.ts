@@ -9,6 +9,7 @@ import { TrackOrderComponent } from './pages/track-order/track-order.component';
 import { AdminComponent } from './pages/admin/admin.component';
 import { AdminOrdersComponent } from './pages/admin-orders/admin-orders.component';
 import { AuthComponent } from './pages/auth/auth.component';
+import { ReturnsExchangeComponent } from './pages/returns-exchange/returns-exchange.component';
 import { AboutUsComponent } from './pages/about-us/about-us.component';
 import { PrivacyPolicyComponent } from './pages/privacy-policy/privacy-policy.component';
 import { TermsOfServiceComponent } from './pages/terms-of-service/terms-of-service.component';
@@ -26,6 +27,7 @@ export const routes: Routes = [
   { path: 'wishlist', component: WishlistComponent, title: 'Wishlist | Jhulki Luxury' },
   { path: 'profile', component: ProfileComponent, title: 'My Account | Jhulki Luxury' },
   { path: 'track-order', component: TrackOrderComponent, title: 'Track Order | Jhulki Luxury' },
+  { path: 'returns-exchange', component: ReturnsExchangeComponent, title: 'Returns & Size Exchange | Jhulki Luxury' },
   { path: 'admin', component: AdminComponent, title: 'Admin Atelier | Jhulki Luxury' },
   { path: 'admin/orders', component: AdminOrdersComponent, title: 'Admin Orders & Logistics | Jhulki Luxury' },
   { path: 'auth', component: AuthComponent, title: 'Sign In / Register | Jhulki Luxury' },

@@ -62,7 +62,7 @@ import { Alert } from '../../utils/alert.utils';
             <span class="gold-text">FREE</span>
           </div>
 
-          <!-- Payment Plan Options -->
+          <!-- Payment Scheme Options -->
           <div class="payment-plan-section mt-4">
             <label class="section-label">SELECT PAYMENT SCHEME:</label>
             <div class="plan-cards-grid mt-2">
@@ -115,8 +115,8 @@ import { Alert } from '../../utils/alert.utils';
             <span class="total-price">₹{{ summary().finalTotal | number:'1.2-2' }}</span>
           </div>
 
-          <!-- Address Picker for Checkout -->
-          <div class="address-section mt-4">
+          <!-- Address Picker for Logged-in Users -->
+          <div class="address-section mt-4" *ngIf="authService.isLoggedIn()">
             <label>DELIVERY ADDRESS:</label>
             <select [(ngModel)]="selectedAddressId" class="address-select mt-2">
               <option value="" disabled [selected]="!selectedAddressId">Select Shipping Address</option>
@@ -127,59 +127,63 @@ import { Alert } from '../../utils/alert.utils';
             <a routerLink="/profile" class="add-address-link mt-2">+ Manage Addresses in Profile</a>
           </div>
 
+          <!-- Checkout Button -->
           <button 
-            (click)="openPaymentModal()" 
-            [disabled]="!selectedAddressId || isProcessing()" 
+            (click)="proceedToPaymentFlow()" 
+            [disabled]="isProcessing() || (authService.isLoggedIn() && !selectedAddressId)" 
             class="luxury-btn-primary checkout-btn mt-4"
           >
-            {{ isProcessing() ? 'PROCESSING ORDER...' : (paymentScheme === '20_PERCENT' ? 'PAY 20% ADVANCE (GENERATE UPI QR)' : 'PROCEED TO PAYMENT') }}
+            {{ isProcessing() ? 'PROCESSING ORDER...' : ('PAY ₹' + (getPayableAmount() | number:'1.2-2') + ' VIA RAZORPAY') }}
           </button>
         </div>
       </div>
 
-      <!-- Instant UPI QR Code Payment Modal Overlay -->
-      <div class="modal-backdrop" *ngIf="showPaymentModal()">
+      <!-- Post-Payment Guest Details & Shipping Address Modal -->
+      <div class="modal-backdrop" *ngIf="showGuestModal()">
         <div class="modal-card glass-card qr-modal-card">
           <div class="modal-header">
             <div>
-              <h3 class="font-serif gold-text">Scan UPI QR Code to Complete Booking</h3>
+              <h3 class="font-serif gold-text">Payment Verified! Fill Shipping Details</h3>
+              <p style="color: #aaa; font-size: 0.8rem; margin: 2px 0 0;">Transaction Ref ID verified. Please provide your shipping details to complete your order booking.</p>
             </div>
-            <button (click)="showPaymentModal.set(false)" class="close-btn">&times;</button>
           </div>
 
           <div class="qr-modal-body mt-3">
-            <div class="merchant-info-strip">
-              <span class="m-label">REGISTERED BUSINESS NAME:</span>
-              <span class="m-val">JHULKI HAUTE COUTURE PRIVATE LIMITED</span>
-            </div>
-
-            <div class="qr-code-box mt-3">
-              <img [src]="getUpiQrUrl()" alt="Jhulki UPI QR Code" class="upi-qr-img" />
-              <div class="qr-details">
-                <span class="upi-id-tag">UPI ID: <strong>jhulki@upi</strong></span>
-                <span class="amount-tag">PAYABLE ADVANCE: <strong class="gold-text">₹{{ getPayableAmount() | number:'1.2-2' }}</strong></span>
-                <p class="scan-note">Scan using GPay, PhonePe, Paytm, BHIM, or any UPI banking app.</p>
+            <form (ngSubmit)="completeGuestOrderAfterPayment()" class="utr-form">
+              <div class="form-group mb-3">
+                <label>FULL NAME</label>
+                <input type="text" [(ngModel)]="guestForm.fullName" name="fullName" placeholder="e.g. Ananya Roy" required />
               </div>
-            </div>
 
-            <form (ngSubmit)="submitUpiPayment()" class="utr-form mt-4">
-              <div class="form-group">
-                <label>ENTER 12-DIGIT UPI TRANSACTION REF ID / UTR</label>
-                <input 
-                  type="text" 
-                  [(ngModel)]="utrNumber" 
-                  name="utrNumber" 
-                  placeholder="e.g. 425619842012" 
-                  maxlength="20"
-                  required 
-                />
-                <span class="help-text">Found in your payment app payment success receipt (UTR / Ref No.)</span>
+              <div class="form-group mb-3">
+                <label>EMAIL ADDRESS</label>
+                <input type="email" [(ngModel)]="guestForm.email" name="email" placeholder="e.g. ananya@gmail.com" required />
+              </div>
+
+              <div class="form-group mb-3">
+                <label>PHONE / CONTACT NUMBER</label>
+                <input type="tel" [(ngModel)]="guestForm.phone" name="phone" placeholder="e.g. +91 9876543210" required />
+              </div>
+
+              <div class="form-group mb-3">
+                <label>SHIPPING STREET ADDRESS</label>
+                <input type="text" [(ngModel)]="guestForm.street" name="street" placeholder="e.g. Flat 402, Sunshine Towers, Marine Drive" required />
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="form-group mb-3">
+                  <label>CITY</label>
+                  <input type="text" [(ngModel)]="guestForm.city" name="city" placeholder="e.g. Mumbai" required />
+                </div>
+                <div class="form-group mb-3">
+                  <label>PINCODE / POSTAL CODE</label>
+                  <input type="text" [(ngModel)]="guestForm.postalCode" name="postalCode" placeholder="e.g. 400021" required />
+                </div>
               </div>
 
               <div class="modal-actions mt-4">
-                <button type="button" (click)="showPaymentModal.set(false)" class="luxury-btn-outline">Cancel</button>
-                <button type="submit" [disabled]="isProcessing()" class="luxury-btn-primary">
-                  {{ isProcessing() ? 'VERIFYING...' : 'VERIFY & CONFIRM BOOKING' }}
+                <button type="submit" [disabled]="isProcessing()" class="luxury-btn-primary w-100">
+                  {{ isProcessing() ? 'CONFIRMING ORDER...' : 'COMPLETE & CONFIRM ORDER' }}
                 </button>
               </div>
             </form>
@@ -248,251 +252,221 @@ import { Alert } from '../../utils/alert.utils';
     .category {
       font-size: 0.6rem;
       letter-spacing: 0.2em;
-      color: var(--color-gold-light);
+      color: var(--color-gold-primary);
     }
 
     .name {
-      font-size: 1.3rem;
+      font-size: 1.15rem;
+      margin: 4px 0 6px;
       color: #fff;
-      margin: 4px 0;
     }
 
     .size-info {
-      font-size: 0.85rem;
-      color: #9a9ab0;
+      font-size: 0.8rem;
+      color: #aaa;
     }
 
     .price {
-      font-size: 1.4rem;
-      color: var(--color-gold-primary);
-      margin-top: 8px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--color-gold-light);
+      margin-top: 6px;
+    }
+
+    .bogo-chip {
+      font-size: 0.6rem;
+      background: #ff4757;
+      color: #fff;
+      padding: 2px 6px;
+      border-radius: 2px;
     }
 
     .item-qty {
       font-size: 0.9rem;
-      color: #aaa;
-      padding: 0 16px;
+      color: #ccc;
     }
 
     .remove-btn {
-      color: #666;
-      font-size: 1.8rem;
-      padding: 4px 12px;
-      transition: var(--transition-smooth);
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 4px 8px;
+      transition: color 0.2s;
     }
 
     .remove-btn:hover {
-      color: #ff6b6b;
+      color: #ff4757;
     }
 
     .summary-panel {
-      padding: 30px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
       height: fit-content;
     }
 
     .summary-title {
-      font-size: 1.8rem;
+      font-size: 1.4rem;
+      margin-bottom: 8px;
       color: #fff;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-      padding-bottom: 16px;
-      margin-bottom: 20px;
     }
 
     .summary-row {
       display: flex;
       justify-content: space-between;
-      color: #aaa;
+      align-items: center;
       font-size: 0.9rem;
-      margin-bottom: 14px;
+      color: #bbb;
     }
 
-    .total-row {
-      border-top: 1px solid rgba(255,255,255,0.1);
-      padding-top: 16px;
-      margin-top: 16px;
+    .price-val {
+      font-weight: 600;
       color: #fff;
-      font-size: 1.1rem;
     }
 
-    .total-price {
-      font-size: 1.8rem;
+    .gold-text {
       color: var(--color-gold-primary);
     }
 
-    .address-section label {
+    .payment-plan-section label {
       font-size: 0.7rem;
       letter-spacing: 0.15em;
       color: #888;
     }
 
-    .address-select {
-      width: 100%;
-      background: #000;
-      color: #fff;
-      border: 1px solid var(--color-border-subtle);
-      padding: 10px;
-      font-size: 0.85rem;
-      border-radius: 4px;
-    }
-
-    .add-address-link {
-      display: block;
-      font-size: 0.75rem;
-      color: var(--color-gold-light);
-      text-decoration: underline;
-    }
-
-    .checkout-btn {
-      width: 100%;
-      padding: 16px;
-    }
-
-    .empty-cart {
-      text-align: center;
-      padding: 80px 24px;
-    }
-
-    .empty-cart h2 {
-      font-size: 2.2rem;
-      color: var(--color-gold-light);
-    }
-
-    .bogo-chip {
-      background: rgba(212,175,55,0.15);
-      border: 1px solid var(--color-gold-primary);
-      color: var(--color-gold-light);
-      font-size: 0.6rem;
-      letter-spacing: 0.1em;
-      padding: 2px 6px;
-      border-radius: 2px;
-      vertical-align: middle;
-    }
-
-    /* Payment Plan Cards */
-    .section-label {
-      font-size: 0.65rem;
-      letter-spacing: 0.15em;
-      color: #888;
-      display: block;
-      margin-bottom: 6px;
-    }
-
     .plan-card {
-      background: rgba(0, 0, 0, 0.4);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 14px;
+      padding: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
       border-radius: 4px;
       cursor: pointer;
-      transition: var(--transition-smooth);
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
+      transition: all 0.2s;
+      background: rgba(255,255,255,0.02);
     }
 
-    .plan-card.selected, .plan-card:hover {
+    .plan-card.selected {
       border-color: var(--color-gold-primary);
-      background: rgba(212, 175, 55, 0.08);
+      background: rgba(212, 175, 55, 0.05);
     }
 
     .plan-radio-row {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     .radio-dot {
-      width: 14px;
-      height: 14px;
+      width: 12px;
+      height: 12px;
       border-radius: 50%;
-      border: 1px solid #888;
-      display: inline-block;
-      transition: var(--transition-smooth);
+      border: 2px solid #666;
     }
 
     .radio-dot.active {
       border-color: var(--color-gold-primary);
       background: var(--color-gold-primary);
-      box-shadow: 0 0 6px rgba(212, 175, 55, 0.6);
     }
 
     .plan-name {
-      font-size: 1rem;
+      font-size: 0.95rem;
       color: #fff;
-      font-weight: 600;
     }
 
     .plan-sub {
+      display: block;
       font-size: 0.75rem;
-      color: #aaa;
-      padding-left: 24px;
+      color: #888;
+      margin-top: 4px;
+      margin-left: 20px;
     }
 
     .plan-badge {
+      display: inline-block;
       font-size: 0.65rem;
-      color: #55efc4;
-      padding-left: 24px;
-      margin-top: 2px;
+      color: var(--color-gold-primary);
+      margin-top: 4px;
+      margin-left: 20px;
     }
 
-    @media (max-width: 900px) {
-      .cart-layout {
-        grid-template-columns: 1fr;
-      }
+    .total-row {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
     }
 
-    /* UPI QR Payment Modal Overlay Window Styles */
+    .total-price {
+      color: var(--color-gold-primary);
+    }
+
+    .address-section label {
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      color: #888;
+      display: block;
+    }
+
+    .address-select {
+      width: 100%;
+      padding: 10px;
+      background: #121214;
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #fff;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+
+    .add-address-link {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--color-gold-primary);
+      text-decoration: none;
+    }
+
+    .checkout-btn {
+      width: 100%;
+      padding: 14px;
+      font-size: 0.85rem;
+      letter-spacing: 0.15em;
+    }
+
     .modal-backdrop {
       position: fixed;
       top: 0;
       left: 0;
       width: 100vw;
       height: 100vh;
-      background: rgba(0, 0, 0, 0.85);
-      backdrop-filter: blur(10px);
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 1000;
+      padding: 20px;
     }
 
     .qr-modal-card {
-      width: 90% !important;
-      max-width: 440px !important;
-      background: rgba(10, 10, 14, 0.55) !important;
-      backdrop-filter: blur(25px) !important;
-      -webkit-backdrop-filter: blur(25px) !important;
-      border: 1px solid rgba(212, 175, 55, 0.35) !important;
-      border-radius: 8px !important;
-      padding: 20px 22px !important;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85), 0 0 25px rgba(212, 175, 55, 0.15) !important;
-      position: relative !important;
-      z-index: 1001 !important;
-      animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    @keyframes modalPop {
-      from { opacity: 0; transform: scale(0.94) translateY(12px); }
-      to { opacity: 1; transform: scale(1) translateY(0); }
+      max-width: 500px;
+      width: 100%;
+      padding: 28px;
     }
 
     .modal-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      padding-bottom: 14px;
+      align-items: flex-start;
+
+      h3 { font-size: 1.2rem; margin: 0; }
     }
 
     .close-btn {
-      font-size: 1.6rem;
-      color: #888;
+      background: none;
+      border: none;
+      color: #aaa;
+      font-size: 1.8rem;
       cursor: pointer;
       line-height: 1;
-      transition: color 0.2s ease;
-    }
-
-    .close-btn:hover {
-      color: #ff6b6b;
     }
 
     .merchant-info-strip {
@@ -536,36 +510,57 @@ import { Alert } from '../../utils/alert.utils';
 
     .upi-id-tag { font-size: 0.85rem; color: #ddd; }
     .amount-tag { font-size: 0.95rem; color: #fff; }
+    .scan-note { font-size: 0.72rem; color: #888; margin: 0; }
+
+    .utr-form .form-group label {
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      color: #aaa;
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .utr-form input {
+      width: 100%;
+      padding: 12px;
+      background: #121214;
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
+      border-radius: 4px;
+      font-size: 0.95rem;
+    }
+
+    .help-text {
+      font-size: 0.7rem;
+      color: #777;
+      display: block;
+      margin-top: 4px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    .modal-actions button {
+      padding: 10px 20px;
+      font-size: 0.8rem;
+    }
+
+    .empty-cart {
+      text-align: center;
+      padding: 60px 20px;
+    }
+
     @media (max-width: 900px) {
-      .cart-page {
-        padding: 20px 12px 60px;
-      }
-      .page-title {
-        font-size: 1.8rem;
-      }
-      .cart-layout {
-        grid-template-columns: 1fr;
-        gap: 24px;
-      }
-      .cart-item-card {
-        padding: 14px;
-        gap: 14px;
-      }
-      .item-img {
-        width: 80px;
-        height: 100px;
-      }
-      .name {
-        font-size: 1rem;
-      }
-      .qr-modal-content {
-        width: 92vw;
-        padding: 20px 16px;
-      }
-      .qr-code-box {
-        flex-direction: column;
-        text-align: center;
-      }
+      .cart-page { padding: 20px 12px 60px; }
+      .page-title { font-size: 1.8rem; }
+      .cart-layout { grid-template-columns: 1fr; gap: 24px; }
+      .cart-item-card { padding: 14px; gap: 14px; }
+      .item-img { width: 80px; height: 100px; }
+      .name { font-size: 1rem; }
+      .qr-code-box { flex-direction: column; text-align: center; }
     }
   `]
 })
@@ -574,8 +569,20 @@ export class CartComponent implements OnInit {
   selectedAddressId: string = '';
   isProcessing = signal(false);
   showPaymentModal = signal(false);
+  showGuestModal = signal(false);
+  paymentGateway: 'RAZORPAY' | 'UPI_QR' = 'RAZORPAY';
   paymentScheme: '20_PERCENT' | 'FULL' = '20_PERCENT';
   utrNumber: string = '';
+
+  guestForm = {
+    fullName: '',
+    email: '',
+    phone: '',
+    street: '',
+    city: 'Mumbai',
+    state: 'Maharashtra',
+    postalCode: ''
+  };
 
   onImageError(event: Event) {
     const img = event.target as HTMLImageElement;
@@ -586,22 +593,19 @@ export class CartComponent implements OnInit {
 
   constructor(
     public ecommerceService: EcommerceService,
-    private authService: AuthService,
+    public authService: AuthService,
     private router: Router
   ) {}
 
   ngOnInit() {
-    if (!this.authService.isLoggedIn()) {
-      this.router.navigate(['/auth']);
-      return;
-    }
-
     this.ecommerceService.fetchCart().subscribe();
-    this.ecommerceService.fetchAddresses().subscribe(addrs => {
-      this.addresses.set(addrs);
-      const defaultAddr = addrs.find(a => a.isDefault) || addrs[0];
-      if (defaultAddr) this.selectedAddressId = defaultAddr.id;
-    });
+    if (this.authService.isLoggedIn()) {
+      this.ecommerceService.fetchAddresses().subscribe(addrs => {
+        this.addresses.set(addrs);
+        const defaultAddr = addrs.find(a => a.isDefault) || addrs[0];
+        if (defaultAddr) this.selectedAddressId = defaultAddr.id;
+      });
+    }
   }
 
   getAvailableAddresses(): Address[] {
@@ -644,14 +648,147 @@ export class CartComponent implements OnInit {
     this.ecommerceService.removeFromCart(cartItemId).subscribe();
   }
 
-  openPaymentModal() {
-    const addrs = this.getAvailableAddresses();
-    const address = addrs.find(a => a.id === this.selectedAddressId) || addrs[0];
-    if (!address) {
-      Alert.warning('Address Required', 'Please select or add a valid delivery address in your Profile.');
+  proceedToPaymentFlow() {
+    if (this.authService.isLoggedIn()) {
+      const addrs = this.getAvailableAddresses();
+      const address = addrs.find(a => a.id === this.selectedAddressId) || addrs[0];
+      if (!address) {
+        Alert.warning('Address Required', 'Please select or add a valid delivery address.');
+        return;
+      }
+      this.selectedAddressId = address.id;
+    }
+
+    this.launchRazorpayCheckout();
+  }
+
+  launchRazorpayCheckout() {
+    const payableRupees = this.getPayableAmount();
+    const amountInPaise = Math.round(payableRupees * 100);
+
+    if (amountInPaise < 100) {
+      Alert.error('Invalid Amount', 'Payable amount must be at least ₹1.');
       return;
     }
-    this.selectedAddressId = address.id;
+
+    this.isProcessing.set(true);
+
+    // Step 1: Call Backend to Create Razorpay Order
+    this.ecommerceService.createRazorpayOrder(amountInPaise, `rcpt_${Date.now()}`).subscribe({
+      next: (orderData) => {
+        const razorpayOrderId = orderData.order_id;
+        const razorpayKeyId = orderData.key_id || 'rzp_live_TbYe1fftFsYN2G';
+
+        const user = this.authService.getUser();
+        const addrs = this.getAvailableAddresses();
+        const userAddr = addrs.find(a => a.id === this.selectedAddressId) || addrs[0];
+
+        const prefillName = user?.fullName || this.guestForm.fullName || 'Valued Client';
+        const prefillEmail = user?.email || this.guestForm.email || 'client@jhulki.store';
+        const prefillPhone = userAddr?.phone || this.guestForm.phone || '';
+
+        // Step 2: Configure Razorpay Standard Checkout Modal
+        const options: any = {
+          key: razorpayKeyId,
+          amount: amountInPaise,
+          currency: 'INR',
+          name: 'Jhulki Haute Couture',
+          description: this.paymentScheme === '20_PERCENT' ? '20% Advance Order Booking' : '100% Full Order Payment',
+          image: '/jhulki_brand_logo.jpg',
+          order_id: razorpayOrderId,
+          prefill: {
+            name: prefillName,
+            email: prefillEmail,
+            contact: prefillPhone
+          },
+          theme: {
+            color: '#d4af37'
+          },
+          handler: (response: any) => {
+            // Step 3: Call Backend to Verify Payment Signature
+            this.handleRazorpaySuccess(response, razorpayOrderId);
+          },
+          modal: {
+            ondismiss: () => {
+              this.isProcessing.set(false);
+              Alert.warning('Payment Cancelled', 'Razorpay checkout window was closed before completing payment.');
+            }
+          }
+        };
+
+        // Open Razorpay Standard Checkout Window
+        const rzp = new (window as any).Razorpay(options);
+        rzp.on('payment.failed', (response: any) => {
+          this.isProcessing.set(false);
+          Alert.error('Payment Failed', response.error?.description || 'Payment could not be processed by Razorpay.');
+        });
+        rzp.open();
+      },
+      error: (err) => {
+        this.isProcessing.set(false);
+        Alert.error('Razorpay Error', err?.error?.error || 'Could not initiate Razorpay order session.');
+      }
+    });
+  }
+
+  private handleRazorpaySuccess(response: any, orderId: string) {
+    const { razorpay_payment_id, razorpay_order_id, razorpay_signature } = response;
+
+    this.ecommerceService.verifyRazorpayPayment(razorpay_order_id, razorpay_payment_id, razorpay_signature).subscribe({
+      next: (verifyRes) => {
+        if (verifyRes.success) {
+          const schemeLabel = this.paymentScheme === '20_PERCENT' ? '20% Advance Booking' : '100% Full Payment';
+          const methodString = `Razorpay Prepaid (${razorpay_payment_id}) - ${schemeLabel}`;
+
+          if (!this.authService.isLoggedIn()) {
+            this.utrNumber = razorpay_payment_id;
+            this.showGuestModal.set(true);
+            this.isProcessing.set(false);
+          } else {
+            this.utrNumber = razorpay_payment_id;
+            this.processLoggedInOrderWithPayment(methodString);
+          }
+        } else {
+          this.isProcessing.set(false);
+          Alert.error('Verification Failed', 'Payment signature mismatch. Order was not created.');
+        }
+      },
+      error: (err) => {
+        this.isProcessing.set(false);
+        Alert.error('Verification Error', err?.error?.error || 'Failed to verify payment with Razorpay backend.');
+      }
+    });
+  }
+
+  private processLoggedInOrderWithPayment(methodString: string) {
+    const fullTotalAmount = this.summary().finalTotal;
+    const finalAmountPaidToday = this.getPayableAmount();
+
+    const addrs = this.getAvailableAddresses();
+    const address = addrs.find(a => a.id === this.selectedAddressId) || addrs[0];
+
+    this.ecommerceService.checkoutOrder(fullTotalAmount, address, methodString).subscribe({
+      next: (order) => {
+        this.finishPaymentFlow(order, finalAmountPaidToday, fullTotalAmount);
+      },
+      error: (err) => {
+        this.isProcessing.set(false);
+        Alert.error('Order Failed', err?.error?.error || 'Order creation failed after payment.');
+      }
+    });
+  }
+
+  openPaymentModal() {
+    if (this.authService.isLoggedIn()) {
+      const addrs = this.getAvailableAddresses();
+      const address = addrs.find(a => a.id === this.selectedAddressId) || addrs[0];
+      if (!address) {
+        Alert.warning('Address Required', 'Please select or add a valid delivery address.');
+        return;
+      }
+      this.selectedAddressId = address.id;
+    }
+
     this.utrNumber = '';
     this.showPaymentModal.set(true);
   }
@@ -662,39 +799,80 @@ export class CartComponent implements OnInit {
       return;
     }
 
-    const addrs = this.getAvailableAddresses();
-    const address = addrs.find(a => a.id === this.selectedAddressId) || addrs[0];
-    if (!address) {
-      Alert.warning('Address Error', 'Please select or add a delivery address.');
+    // Hide payment QR modal
+    this.showPaymentModal.set(false);
+
+    if (!this.authService.isLoggedIn()) {
+      // Guest User Flow: Prompt for Shipping Details NOW after payment
+      this.showGuestModal.set(true);
+    } else {
+      // Logged In User Flow: Complete order directly
+      this.processLoggedInOrder();
+    }
+  }
+
+  completeGuestOrderAfterPayment() {
+    if (!this.guestForm.fullName || !this.guestForm.email || !this.guestForm.phone || !this.guestForm.street) {
+      Alert.warning('Incomplete Details', 'Please fill in your name, email, contact number, and shipping address.');
       return;
     }
 
     const fullTotalAmount = this.summary().finalTotal;
     const finalAmountPaidToday = this.getPayableAmount();
     const schemeLabel = this.paymentScheme === '20_PERCENT' ? '20% Advance Booking' : '100% Full Payment';
+    const methodString = this.utrNumber.startsWith('pay_')
+      ? `Razorpay Prepaid (${this.utrNumber}) - ${schemeLabel}`
+      : `Prepaid UPI (UTR: ${this.utrNumber.trim()}) - ${schemeLabel}`;
+
+    this.isProcessing.set(true);
+
+    this.ecommerceService.registerGuestAndCreateAddress(this.guestForm).subscribe({
+      next: (res) => {
+        const shippingAddress: Address = res.address || {
+          id: 'guest-addr',
+          userId: res.user.id,
+          title: 'Shipping Address',
+          fullName: this.guestForm.fullName,
+          street: this.guestForm.street,
+          city: this.guestForm.city,
+          state: this.guestForm.state,
+          postalCode: this.guestForm.postalCode,
+          country: 'India',
+          phone: this.guestForm.phone,
+          isDefault: true
+        };
+
+        this.ecommerceService.checkoutOrder(fullTotalAmount, shippingAddress, methodString).subscribe({
+          next: (order) => {
+            this.showGuestModal.set(false);
+            this.finishPaymentFlow(order, finalAmountPaidToday, fullTotalAmount);
+          },
+          error: (err) => {
+            this.isProcessing.set(false);
+            Alert.error('Order Failed', err?.error?.error || 'Order creation failed.');
+          }
+        });
+      },
+      error: (err) => {
+        this.isProcessing.set(false);
+        Alert.error('Registration Failed', err?.error?.error || 'Could not save guest account details.');
+      }
+    });
+  }
+
+  private processLoggedInOrder() {
+    const fullTotalAmount = this.summary().finalTotal;
+    const finalAmountPaidToday = this.getPayableAmount();
+    const schemeLabel = this.paymentScheme === '20_PERCENT' ? '20% Advance Booking' : '100% Full Payment';
     const methodString = `Prepaid UPI (UTR: ${this.utrNumber.trim()}) - ${schemeLabel}`;
+
+    const addrs = this.getAvailableAddresses();
+    const address = addrs.find(a => a.id === this.selectedAddressId) || addrs[0];
 
     this.isProcessing.set(true);
     this.ecommerceService.checkoutOrder(fullTotalAmount, address, methodString).subscribe({
       next: (order) => {
-        this.isProcessing.set(false);
-        this.showPaymentModal.set(false);
-
-        if (this.paymentScheme === '20_PERCENT') {
-          Alert.success(
-            'UPI Payment Received & Order Placed!',
-            `Transaction Ref ID: ${this.utrNumber.trim()}\n\nOrder #${order.orderNumber} successfully registered with ₹${finalAmountPaidToday.toLocaleString()} advance booking.\n\nProduct verification & Delhivery AWB assignment will occur within 2 days. Track live status anytime in your Profile / Track Order.`
-          ).then(() => {
-            this.router.navigate(['/track-order']);
-          });
-        } else {
-          Alert.success(
-            'UPI Payment Received!',
-            `Transaction Ref ID: ${this.utrNumber.trim()}\n\nThank you! Order #${order.orderNumber} (₹${fullTotalAmount.toLocaleString()}) has been confirmed.`
-          ).then(() => {
-            this.router.navigate(['/track-order']);
-          });
-        }
+        this.finishPaymentFlow(order, finalAmountPaidToday, fullTotalAmount);
       },
       error: (err) => {
         this.isProcessing.set(false);
@@ -702,4 +880,26 @@ export class CartComponent implements OnInit {
       }
     });
   }
+
+  private finishPaymentFlow(order: any, finalAmountPaidToday: number, fullTotalAmount: number) {
+    this.isProcessing.set(false);
+    this.showPaymentModal.set(false);
+
+    if (this.paymentScheme === '20_PERCENT') {
+      Alert.success(
+        'Payment Verified & Order Placed!',
+        `Order #${order.orderNumber} successfully registered with ₹${finalAmountPaidToday.toLocaleString()} advance booking.\n\nYour user account has been registered with your provided contact details. You can track your order status in real time.`
+      ).then(() => {
+        this.router.navigate(['/track-order']);
+      });
+    } else {
+      Alert.success(
+        'Payment Confirmed!',
+        `Thank you! Order #${order.orderNumber} (₹${fullTotalAmount.toLocaleString()}) has been confirmed.`
+      ).then(() => {
+        this.router.navigate(['/track-order']);
+      });
+    }
+  }
 }
+

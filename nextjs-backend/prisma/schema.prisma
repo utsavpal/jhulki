@@ -74,6 +74,7 @@ model Product {
   category    Category      @relation(fields: [categoryId], references: [id])
   isFeatured  Boolean       @default(false)
   isNewArrival Boolean      @default(true)
+  isOutOfStock Boolean      @default(false)
   stock       ProductStock[]
   wishlists   Wishlist[]
   cartItems   CartItem[]

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { corsHeaders, handleCors } from '@/lib/cors';
+import { sendOrderConfirmationEmail, sendOrderTransactionalSms } from '@/lib/brevo';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,11 +84,34 @@ export async function POST(req: NextRequest) {
           create: orderItemsData,
         },
       },
-      include: { items: true },
+      include: {
+        items: {
+          include: { product: true }
+        },
+        user: true
+      },
     });
 
     // Clear cart after order
     await prisma.cartItem.deleteMany({ where: { userId } });
+
+    // Fetch user details to get target email address
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const targetEmail = user?.email || shippingAddress.email;
+
+    if (targetEmail) {
+      // Fire-and-forget email sending so order placement remains instantaneous
+      sendOrderConfirmationEmail(order, targetEmail).catch((err) =>
+        console.error('Asynchronous Brevo email error:', err)
+      );
+    }
+
+    if (shippingAddress?.phone) {
+      // Fire-and-forget SMS sending via Brevo Transactional SMS API
+      sendOrderTransactionalSms(order, shippingAddress.phone).catch((err) =>
+        console.error('Asynchronous Brevo SMS error:', err)
+      );
+    }
 
     return NextResponse.json(order, { status: 201, headers: corsHeaders() });
   } catch (error: any) {
